@@ -4,46 +4,68 @@
 
 Adafruit_MPU6050 mpu;
 
-// Simple accident detection threshold
-float IMPACT_THRESHOLD = 1.0;  // g-force threshold
+// Thresholds
+float impactThreshold = 22.0;    // m/s²  (≈ 2.2g impact)
+float tiltThreshold   = 55.0;    // degrees (vehicle fall angle)
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  Wire.begin(21, 22);   // SDA=21, SCL=22 for ESP32
 
   Serial.println("Initializing MPU6050...");
-
-  if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050. Check wiring!");
-    while (1) delay(10);
+  if (!mpu.begin(0x68)) {   // use 0x69 if your scanner shows that
+    Serial.println("❌ MPU6050 not found!");
+    while (1);
   }
 
-  // Configure accelerometer range (keep it simple)
-  mpu.setAccelerometerRange(MPU6050_RANGE_4_G);
-  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-
-  Serial.println("MPU6050 OK!");
+  Serial.println("✅ MPU6050 Connected!");
+  delay(1500);
 }
 
 void loop() {
+
   sensors_event_t accel, gyro, temp;
   mpu.getEvent(&accel, &gyro, &temp);
 
-  // Calculate total acceleration (overall g-force)
-  float ax = accel.acceleration.x / 9.81;
-  float ay = accel.acceleration.y / 9.81;
-  float az = accel.acceleration.z / 9.81;
+  // Calculate acceleration magnitude
+  float totalAcc = sqrt(
+    accel.acceleration.x * accel.acceleration.x +
+    accel.acceleration.y * accel.acceleration.y +
+    accel.acceleration.z * accel.acceleration.z
+  );
 
-  float totalG = sqrt(ax * ax + ay * ay + az * az);
+  // Calculate tilt angles
+  float roll  = atan2(accel.acceleration.y, accel.acceleration.z) * 57.3;
+  float pitch = atan2(-accel.acceleration.x,
+                sqrt(accel.acceleration.y * accel.acceleration.y +
+                     accel.acceleration.z * accel.acceleration.z)) * 57.3;
 
-  Serial.print("G-force: ");
-  Serial.println(totalG, 2);
+  // Print readings
+  Serial.print("Acc: ");
+  Serial.print(totalAcc);
+  Serial.print("  | Roll: ");
+  Serial.print(roll);
+  Serial.print("  | Pitch: ");
+  Serial.println(pitch);
 
-  // Simple impact detection
-  if (totalG > IMPACT_THRESHOLD) {
-    Serial.println("⚠️  IMPACT DETECTED! Possible Accident!");
+  // Detect impact and fall
+  bool impactDetected = (totalAcc > impactThreshold);
+  bool fallDetected   = (abs(roll) > tiltThreshold || abs(pitch) > tiltThreshold);
+
+  if (impactDetected) {
+    Serial.println("⚠ IMPACT DETECTED!");
   }
 
-  delay(1000);
+  if (fallDetected) {
+    Serial.println("⚠ FALL / TILT DETECTED!");
+  }
+
+  // Accident = impact OR fall
+  if (impactDetected || fallDetected) {
+    Serial.println("🚨 ACCIDENT DETECTED 🚨");
+    Serial.println("--------------------------------");
+    delay(3000);  // avoid repeated alerts
+  }
+
+  delay(200);
 }
