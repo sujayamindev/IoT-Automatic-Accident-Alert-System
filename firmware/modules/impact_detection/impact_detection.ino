@@ -1,3 +1,7 @@
+// Standalone Impact Detection Module
+// Tests MPU6050 sensor for crash and rollover detection
+// No GPS or Firebase required
+
 #include <Wire.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>

@@ -36,7 +36,7 @@ void loop() {
       Serial.println(gps.location.lng(), 6);
       Serial.print("SPEED (km/h) = "); 
       Serial.println(gps.speed.kmph()); 
-      Serial.print("ALT (min)= "); 
+      Serial.print("ALT (m)= "); 
       Serial.println(gps.altitude.meters());
       Serial.print("HDOP = "); 
       Serial.println(gps.hdop.value() / 100.0); 

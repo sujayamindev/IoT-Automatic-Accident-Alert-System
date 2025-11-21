@@ -1,5 +1,6 @@
-// Combined test for MPU6050 and GPS Module with Firebase Integration
-// Uploads sensor data to Firebase Realtime Database
+// IoT Automatic Accident Alert System - Main Firmware
+// ESP32 + MPU6050 + GPS Module with Firebase Integration
+// Detects accidents and uploads real-time location data
 
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
@@ -7,21 +8,7 @@
 #include <TinyGPS++.h>
 #include <WiFi.h>
 #include <Firebase_ESP_Client.h>
-
-// WiFi Credentials 
-#define WIFI_SSID "1234"
-#define WIFI_PASSWORD "mindev1239"
-
-// Firebase Credentials 
-#define API_KEY "AIzaSyCfF-QCBXmlP1sBFvm3j-LfYha-wUqfUGc"
-#define DATABASE_URL "https://iot-project-fa54e-default-rtdb.asia-southeast1.firebasedatabase.app/"
-#define USER_EMAIL "test@test.com"
-#define USER_PASSWORD "test1234"
-
-// GPS Serial Configuration
-#define RXD2 16
-#define TXD2 17
-#define GPS_BAUD 9600
+#include "config.h"
 
 // Create sensor objects
 Adafruit_MPU6050 mpu;
@@ -35,18 +22,11 @@ FirebaseConfig config;
 
 // Time Tracking
 unsigned long sendDataPrevMillis = 0;
-const unsigned long uploadInterval = 1000; // Upload every 1 second
-
-// Impact Detection Thresholds
-float impactThreshold = 22.0;    // m/s² (≈ 2.2g impact)
-float tiltThreshold = 55.0;      // degrees (vehicle fall angle)
 
 // Accident Detection Variables
 unsigned long lastAccidentTime = 0;
-const unsigned long accidentDebounce = 5000; // 5 seconds debounce
-unsigned long accidentDetectionTime = 0; // Time when accident was first detected
-const unsigned long accidentUploadDelay = 5000; // Wait 5 seconds after detection before uploading
-bool accidentInProgress = false; // Track if accident is being processed
+unsigned long accidentDetectionTime = 0;
+bool accidentInProgress = false;
 bool lastImpactStatus = false;
 bool lastFallStatus = false;
 bool lastRollOrTiltStatus = false;
@@ -55,7 +35,7 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
   
-  Serial.println("=== MPU6050 & GPS Module with Firebase ===");
+  Serial.println("=== IoT Accident Alert System ===");
   Serial.println();
   
   // Initialize WiFi
@@ -223,8 +203,8 @@ void loop() {
   Serial.println(pitch);
   
   // Detect impact and fall
-  bool impactDetected = (totalAcc > impactThreshold);
-  bool fallDetected = (abs(roll) > tiltThreshold || abs(pitch) > tiltThreshold);
+  bool impactDetected = (totalAcc > IMPACT_THRESHOLD);
+  bool fallDetected = (abs(roll) > TILT_THRESHOLD || abs(pitch) > TILT_THRESHOLD);
   bool accidentDetected = (impactDetected || fallDetected);
   
   if (impactDetected) {
@@ -293,7 +273,7 @@ void loop() {
   Serial.println();
   
   // Upload to Firebase
-  if (Firebase.ready() && (millis() - sendDataPrevMillis > uploadInterval || sendDataPrevMillis == 0))
+  if (Firebase.ready() && (millis() - sendDataPrevMillis > UPLOAD_INTERVAL || sendDataPrevMillis == 0))
   {
     sendDataPrevMillis = millis();
     
@@ -410,21 +390,21 @@ void loop() {
   }
   
   // Accident Detection Logic with Delayed Upload
-  if (accidentDetected && !accidentInProgress && (millis() - lastAccidentTime > accidentDebounce))
+  if (accidentDetected && !accidentInProgress && (millis() - lastAccidentTime > ACCIDENT_DEBOUNCE))
   {
     // Accident just detected, start timer
     accidentInProgress = true;
     accidentDetectionTime = millis();
     lastImpactStatus = impactDetected;
     lastFallStatus = fallDetected;
-    lastRollOrTiltStatus = (abs(roll) > tiltThreshold || abs(pitch) > tiltThreshold);
+    lastRollOrTiltStatus = (abs(roll) > TILT_THRESHOLD || abs(pitch) > TILT_THRESHOLD);
     
     Serial.println();
     Serial.println("🚨 ACCIDENT DETECTED - Waiting to upload... 🚨");
   }
   
   // Upload Accident Data to Firebase after delay
-  if (Firebase.ready() && accidentInProgress && (millis() - accidentDetectionTime >= accidentUploadDelay))
+  if (Firebase.ready() && accidentInProgress && (millis() - accidentDetectionTime >= ACCIDENT_UPLOAD_DELAY))
   {
     lastAccidentTime = millis();
     accidentInProgress = false;

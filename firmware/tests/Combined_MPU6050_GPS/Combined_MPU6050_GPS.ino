@@ -243,8 +243,8 @@ void uploadMPUData() {
       updates += "0";  // First entry is 0 seconds
     } else {
       // Calculate delta_t in seconds
-      int delta_t = (mpuBuffer[idx].timestamp - mpuBuffer[(startIndex + i - 1) % MPU_BUFFER_SIZE].timestamp) / 1000;
-      updates += String(delta_t);
+      float delta_t = (mpuBuffer[idx].timestamp - mpuBuffer[(startIndex + i - 1) % MPU_BUFFER_SIZE].timestamp) / 1000.0;
+      updates += String(delta_t, 3);  // Include milliseconds precision
     }
     updates += ",";
     updates += String(mpuBuffer[idx].accel_x, 4) + ",";
@@ -328,8 +328,8 @@ void uploadGPSData() {
       updates += "0";  // First entry is 0 seconds
     } else {
       // Calculate delta_t in seconds
-      int delta_t = (gpsBuffer[idx].timestamp - gpsBuffer[(startIndex + i - 1) % GPS_BUFFER_SIZE].timestamp) / 1000;
-      updates += String(delta_t);
+      float delta_t = (gpsBuffer[idx].timestamp - gpsBuffer[(startIndex + i - 1) % GPS_BUFFER_SIZE].timestamp) / 1000.0;
+      updates += String(delta_t, 3);  // 3 decimal places for milliseconds
     }
     updates += ",";
     updates += String(gpsBuffer[idx].latitude, 6) + ",";
