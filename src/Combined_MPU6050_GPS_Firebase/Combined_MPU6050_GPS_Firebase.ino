@@ -37,6 +37,20 @@ FirebaseConfig config;
 unsigned long sendDataPrevMillis = 0;
 const unsigned long uploadInterval = 1000; // Upload every 1 second
 
+// Impact Detection Thresholds
+float impactThreshold = 22.0;    // m/s² (≈ 2.2g impact)
+float tiltThreshold = 55.0;      // degrees (vehicle fall angle)
+
+// Accident Detection Variables
+unsigned long lastAccidentTime = 0;
+const unsigned long accidentDebounce = 5000; // 5 seconds debounce
+unsigned long accidentDetectionTime = 0; // Time when accident was first detected
+const unsigned long accidentUploadDelay = 5000; // Wait 5 seconds after detection before uploading
+bool accidentInProgress = false; // Track if accident is being processed
+bool lastImpactStatus = false;
+bool lastFallStatus = false;
+bool lastRollOrTiltStatus = false;
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
@@ -184,6 +198,44 @@ void loop() {
   Serial.print("Temperature: ");
   Serial.print(temp.temperature);
   Serial.println(" degC");
+  Serial.println();
+  
+  // Calculate Impact Metrics
+  float totalAcc = sqrt(
+    a.acceleration.x * a.acceleration.x +
+    a.acceleration.y * a.acceleration.y +
+    a.acceleration.z * a.acceleration.z
+  );
+  
+  // Calculate tilt angles
+  float roll = atan2(a.acceleration.y, a.acceleration.z) * 57.3;
+  float pitch = atan2(-a.acceleration.x,
+                sqrt(a.acceleration.y * a.acceleration.y +
+                     a.acceleration.z * a.acceleration.z)) * 57.3;
+  
+  Serial.println("--- Impact Detection ---");
+  Serial.print("Total Acceleration: ");
+  Serial.print(totalAcc);
+  Serial.println(" m/s^2");
+  Serial.print("Roll: ");
+  Serial.print(roll);
+  Serial.print(" | Pitch: ");
+  Serial.println(pitch);
+  
+  // Detect impact and fall
+  bool impactDetected = (totalAcc > impactThreshold);
+  bool fallDetected = (abs(roll) > tiltThreshold || abs(pitch) > tiltThreshold);
+  bool accidentDetected = (impactDetected || fallDetected);
+  
+  if (impactDetected) {
+    Serial.println("⚠️ IMPACT DETECTED!");
+  }
+  if (fallDetected) {
+    Serial.println("⚠️ FALL / TILT DETECTED!");
+  }
+  if (accidentDetected) {
+    Serial.println("🚨 ACCIDENT DETECTED 🚨");
+  }
   Serial.println();
   
   // Read GPS data
@@ -355,6 +407,51 @@ void loop() {
     }
     
     Serial.println("--- Upload Complete ---");
+  }
+  
+  // Accident Detection Logic with Delayed Upload
+  if (accidentDetected && !accidentInProgress && (millis() - lastAccidentTime > accidentDebounce))
+  {
+    // Accident just detected, start timer
+    accidentInProgress = true;
+    accidentDetectionTime = millis();
+    lastImpactStatus = impactDetected;
+    lastFallStatus = fallDetected;
+    lastRollOrTiltStatus = (abs(roll) > tiltThreshold || abs(pitch) > tiltThreshold);
+    
+    Serial.println();
+    Serial.println("🚨 ACCIDENT DETECTED - Waiting to upload... 🚨");
+  }
+  
+  // Upload Accident Data to Firebase after delay
+  if (Firebase.ready() && accidentInProgress && (millis() - accidentDetectionTime >= accidentUploadDelay))
+  {
+    lastAccidentTime = millis();
+    accidentInProgress = false;
+    
+    Serial.println();
+    Serial.println("🚨 UPLOADING ACCIDENT STATUS TO FIREBASE 🚨");
+    
+    // Upload accident status
+    if (Firebase.RTDB.setBool(&fbdo, "/accidents/latest/impactDetected", lastImpactStatus)) {
+      Serial.println("✓ Impact status uploaded");
+    } else {
+      Serial.println("✗ Impact status failed: " + fbdo.errorReason());
+    }
+    
+    if (Firebase.RTDB.setBool(&fbdo, "/accidents/latest/fallDetected", lastFallStatus)) {
+      Serial.println("✓ Fall status uploaded");
+    } else {
+      Serial.println("✗ Fall status failed: " + fbdo.errorReason());
+    }
+    
+    if (Firebase.RTDB.setBool(&fbdo, "/accidents/latest/rollOrTiltDetected", lastRollOrTiltStatus)) {
+      Serial.println("✓ Roll/Tilt status uploaded");
+    } else {
+      Serial.println("✗ Roll/Tilt status failed: " + fbdo.errorReason());
+    }
+    
+    Serial.println("🚨 ACCIDENT UPLOAD COMPLETE 🚨");
   }
   
   Serial.println();
