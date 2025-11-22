@@ -1,0 +1,24 @@
+version: 1
+services:
+  - type: web
+    name: iot-accident-alert-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FIREBASE_CREDENTIALS_PATH
+        value: ./firebase-service-account.json
+      - key: TELEMETRY_RETENTION_SECONDS
+        value: 3600
