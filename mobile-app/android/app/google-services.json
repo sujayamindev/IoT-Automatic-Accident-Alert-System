@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "915877620930",
+    "firebase_url": "https://iot-project-fa54e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "iot-project-fa54e",
+    "storage_bucket": "iot-project-fa54e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:915877620930:android:db82fe6205ae0d0dee5f5b",
+        "android_client_info": {
+          "package_name": "com.iotaccidentalert.accident_alert_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9PuE1eyD3U4isSFAbsVrE9OhshvODFKc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
