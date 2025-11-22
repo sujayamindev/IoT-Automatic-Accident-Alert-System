@@ -89,11 +89,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Icons.speed,
                                   ),
                                   _buildStatusItem(
-                                    'Battery',
-                                    '${telemetry.batteryPercentage}%',
-                                    Icons.battery_full,
-                                  ),
-                                  _buildStatusItem(
                                     'Signal',
                                     '${telemetry.gsmSignalLevel}',
                                     Icons.signal_cellular_alt,

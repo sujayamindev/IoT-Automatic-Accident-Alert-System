@@ -50,10 +50,10 @@ class MyApp extends StatelessWidget {
               useMaterial3: true,
               appBarTheme: const AppBarTheme(
                 centerTitle: true,
-                elevation: 2,
+                elevation: 0,
               ),
               cardTheme: CardThemeData(
-                elevation: 2,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
