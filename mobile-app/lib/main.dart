@@ -44,18 +44,34 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.blue,
+                seedColor: const Color(0xFF6366F1),
                 brightness: Brightness.light,
+                primary: const Color(0xFF6366F1),
+                secondary: const Color(0xFF8B5CF6),
               ),
               useMaterial3: true,
+              scaffoldBackgroundColor: const Color(0xFFF8FAFC),
               appBarTheme: const AppBarTheme(
                 centerTitle: true,
-                elevation: 2,
+                elevation: 0,
+                backgroundColor: Colors.white,
+                foregroundColor: Color(0xFF1E293B),
               ),
               cardTheme: CardThemeData(
-                elevation: 2,
+                elevation: 0,
+                color: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                margin: const EdgeInsets.symmetric(vertical: 8),
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),

@@ -34,13 +34,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Align(
+          alignment: Alignment.centerLeft,
+          child: Text('Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+        centerTitle: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.of(context).pushNamed('/profile');
-            },
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6366F1).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.person_outline),
+              color: const Color(0xFF6366F1),
+              onPressed: () {
+                Navigator.of(context).pushNamed('/profile');
+              },
+            ),
           ),
         ],
       ),
@@ -55,54 +67,83 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Device Status Card
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: telemetry != null 
+                            ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
+                            : [const Color(0xFF94A3B8), const Color(0xFF64748B)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  telemetry != null ? Icons.check_circle : Icons.circle_outlined,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                telemetry != null ? 'Device Online' : 'Device Offline',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (telemetry != null) ...[
+                            const SizedBox(height: 20),
                             Row(
                               children: [
-                                Icon(
-                                  Icons.circle,
-                                  color: telemetry != null ? Colors.green : Colors.grey,
-                                  size: 16,
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: _buildStatusItem(
+                                      'Speed',
+                                      '${telemetry.speed.toStringAsFixed(1)} km/h',
+                                      Icons.speed,
+                                    ),
+                                  ),
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  telemetry != null ? 'Device Online' : 'Device Offline',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: _buildStatusItem(
+                                      'Signal',
+                                      '${telemetry.gsmSignalLevel}',
+                                      Icons.signal_cellular_alt,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                            if (telemetry != null) ...[
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _buildStatusItem(
-                                    'Speed',
-                                    '${telemetry.speed.toStringAsFixed(1)} km/h',
-                                    Icons.speed,
-                                  ),
-                                  _buildStatusItem(
-                                    'Battery',
-                                    '${telemetry.batteryPercentage}%',
-                                    Icons.battery_full,
-                                  ),
-                                  _buildStatusItem(
-                                    'Signal',
-                                    '${telemetry.gsmSignalLevel}',
-                                    Icons.signal_cellular_alt,
-                                  ),
-                                ],
-                              ),
-                            ],
                           ],
-                        ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -152,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 1.5,
+                      childAspectRatio: 1.3,
                       children: [
                         _buildActionButton(
                           context,
@@ -194,20 +235,22 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildStatusItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: Colors.blue),
-        const SizedBox(height: 4),
+        Icon(icon, color: Colors.white, size: 28),
+        const SizedBox(height: 8),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
+        const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
-            color: Colors.grey[600],
+            color: Colors.white70,
           ),
         ),
       ],
@@ -215,37 +258,57 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAlertCard(String label, bool isActive, IconData icon, Color color) {
-    return Card(
-      color: isActive ? color.withOpacity(0.1) : Colors.grey[100],
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isActive ? color : Colors.grey,
-              size: 32,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: isActive ? color : Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              isActive ? 'DETECTED' : 'Normal',
-              style: TextStyle(
-                fontSize: 10,
-                color: isActive ? color : Colors.grey,
-              ),
-            ),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        color: isActive ? color.withOpacity(0.1) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isActive ? color : const Color(0xFFE2E8F0),
+          width: 2,
         ),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isActive ? color.withOpacity(0.2) : const Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: isActive ? color : const Color(0xFF94A3B8),
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isActive ? color : const Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: isActive ? color : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              isActive ? 'ALERT' : 'Normal',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: isActive ? Colors.white : const Color(0xFF94A3B8),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -257,23 +320,37 @@ class _HomeScreenState extends State<HomeScreen> {
     Color color,
     String route,
   ) {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+      ),
       child: InkWell(
         onTap: () {
           Navigator.of(context).pushNamed(route);
         },
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 32),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
               const SizedBox(height: 8),
               Text(
                 label,
                 style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E293B),
                 ),
                 textAlign: TextAlign.center,
               ),

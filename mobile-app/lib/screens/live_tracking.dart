@@ -85,16 +85,8 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                   flex: 1,
                   child: Container(
                     padding: const EdgeInsets.all(16.0),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.3),
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: const Offset(0, -3),
-                        ),
-                      ],
                     ),
                     child: telemetry != null
                         ? Column(
@@ -112,11 +104,6 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                                     'Speed',
                                     '${telemetry.speed.toStringAsFixed(1)} km/h',
                                     Icons.speed,
-                                  ),
-                                  _buildDataItem(
-                                    'Battery',
-                                    '${telemetry.batteryPercentage}%',
-                                    Icons.battery_full,
                                   ),
                                   _buildDataItem(
                                     'Signal',
