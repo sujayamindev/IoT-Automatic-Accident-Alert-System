@@ -1,20 +1,17 @@
-// MQ-7 CO Sensor with ESP32
-// Connect MQ-7 Analog OUT → GPIO34 (or 35, 36, 39)
-
-int mq7Pin = 34;   // Analog input pin for MQ-7
+#define MQ7_PIN 34   // MQ-7 analog output to ESP32 ADC
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  pinMode(MQ7_PIN, INPUT);
 
-  Serial.println("MQ-7 Sensor Test Starting...");
+  Serial.println("=== MQ-7 Sensor Test (ESP32) ===");
 }
 
 void loop() {
-  int sensorValue = analogRead(mq7Pin);   // Read raw analog value (0–4095)
-  
-  Serial.print("MQ-7 Value: ");
-  Serial.println(sensorValue);
+  int mqValue = analogRead(MQ7_PIN);   // Range: 0 – 4095 on ESP32
+
+  Serial.print("MQ-7 Raw Value: ");
+  Serial.println(mqValue);
 
   delay(500);
 }
