@@ -1,7 +1,7 @@
 #include <TinyGPS++.h>
 
-#define GPS_RX 19    // ESP32 receives from GPS TX
-#define GPS_TX 18    // ESP32 sends to GPS RX
+#define GPS_RX 18   // ESP32 receives from GPS TX
+#define GPS_TX 19   // ESP32 sends to GPS RX
 
 #define GPS_BAUD 9600
 
