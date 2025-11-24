@@ -139,4 +139,4 @@ void loop() {
   // Wait before next batch
   Serial.println("Waiting 60 seconds...");
   delay(60000);
-}S
+}
