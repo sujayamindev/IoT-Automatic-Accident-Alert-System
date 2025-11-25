@@ -51,3 +51,7 @@ bool mpu_detectTilt() {
   
   return false;
 }
+
+void mpu_getRawData(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz) {
+  mpu.getMotion6(ax, ay, az, gx, gy, gz);
+}

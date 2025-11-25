@@ -13,5 +13,6 @@ const float TILT_ANGLE_THRESHOLD = 45.0;   // fall/tilt angle
 void mpu_init();
 bool mpu_detectImpact();
 bool mpu_detectTilt();
+void mpu_getRawData(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz);
 
 #endif
