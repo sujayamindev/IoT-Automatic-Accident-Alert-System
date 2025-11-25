@@ -3,41 +3,64 @@
 #include "src/SIM.h"
 #include "src/SMS.h"
 #include "src/Config.h"
+#include "src/API.h"
+#include "src/Sensors.h"
 #include "BluetoothSerial.h"
 
 BluetoothSerial SerialBT;
 
 bool accidentDetected = false;
 bool simAvailable = false;
+unsigned long lastTelemetryUpload = 0;
 
 void setup() {
   Serial.begin(115200);
+  Serial.println("\n=================================");
   Serial.println("Accident Alert System Starting...");
+  Serial.println("=================================");
   
   // Initialize Bluetooth Serial
   SerialBT.begin(BLUETOOTH_DEVICE_NAME);
   Serial.println("Bluetooth Serial initialized - Device Name: ESP32_Accident_Alert");
   SerialBT.println("Accident Alert System - Bluetooth Connected");
   
-  // Initialize sensors
+  // Initialize WiFi and API client (for telemetry)
+  Serial.println("\n--- WiFi & API Initialization ---");
+  if (api_init()) {
+    Serial.println("✓ API Client ready");
+    Serial.println("Device MAC: " + api_getMacAddress());
+    SerialBT.println("WiFi Connected - Device MAC: " + api_getMacAddress());
+  } else {
+    Serial.println("✗ API Client failed - will retry in loop");
+    SerialBT.println("WiFi Connection Failed - will retry");
+  }
+  
+  // Initialize core sensors
+  Serial.println("\n--- Core Sensors Initialization ---");
   mpu_init();
   gps_init();
   
-  // Try to initialize GSM module
-  Serial.println("Initializing GSM module...");
+  // Initialize additional sensors (DHT11, MQ-7, Flame)
+  Serial.println("\n--- Additional Sensors Initialization ---");
+  sensors_init();
+  
+  // Try to initialize GSM module (for SMS backup)
+  Serial.println("\n--- GSM Module Initialization ---");
   SerialBT.println("Initializing GSM module...");
   sim_init();
   
-  // Check if SIM800L is available (you can implement a check in SIM.cpp)
-  // For now, we'll try WiFi as fallback
-  Serial.println("Initializing WiFi SMS Gateway as fallback...");
+  // Initialize WiFi SMS Gateway as fallback
+  Serial.println("\n--- SMS Gateway Initialization ---");
   SerialBT.println("Initializing WiFi SMS Gateway...");
   sms_init();
   
   // Determine which module is available
   simAvailable = true;  // Set based on actual SIM module check
   
+  Serial.println("\n=================================");
   Serial.println("System Ready!");
+  Serial.println("Telemetry upload every " + String(UPLOAD_INTERVAL_MS / 1000) + " seconds");
+  Serial.println("=================================\n");
   SerialBT.println("System Ready!");
 }
 
@@ -48,6 +71,10 @@ void loop() {
   // Check for impact or tilt
   bool impact = mpu_detectImpact();
   bool tilt = mpu_detectTilt();
+  
+  // Read additional sensors
+  bool fireDetected = sensors_isFireDetected();
+  bool smokeDetected = sensors_isCODetected();
   
   // If accident detected and not already processed
   if ((impact || tilt) && !accidentDetected) {
@@ -105,6 +132,44 @@ void loop() {
     
     // Reset flag (or keep it true if you want to send only once)
     accidentDetected = false;
+  }
+  
+  // ===== TELEMETRY UPLOAD TO BACKEND (NEW) =====
+  unsigned long currentMillis = millis();
+  if (currentMillis - lastTelemetryUpload >= UPLOAD_INTERVAL_MS) {
+    lastTelemetryUpload = currentMillis;
+    
+    // Reconnect WiFi if disconnected
+    if (!api_isConnected()) {
+      Serial.println("WiFi disconnected, reconnecting...");
+      api_init();
+    }
+    
+    if (api_isConnected()) {
+      // Gather all sensor data
+      double lat = gps_getLatitude();
+      double lng = gps_getLongitude();
+      float speed = gps_getSpeed();
+      bool vibration = impact || tilt;  // Any detected impact/tilt
+      float temperature = sensors_getTemperature();
+      float humidity = sensors_getHumidity();
+      int coLevel = sensors_getCOLevel();
+      int flameLevel = sensors_getFlameLevel();
+      
+      // Send telemetry to backend
+      bool success = api_sendTelemetry(
+        lat, lng, speed,
+        fireDetected, smokeDetected, vibration,
+        temperature, humidity, coLevel, flameLevel
+      );
+      
+      if (success) {
+        SerialBT.println("✓ Telemetry uploaded");
+      } else {
+        Serial.println("✗ Telemetry upload failed");
+        SerialBT.println("✗ Telemetry upload failed");
+      }
+    }
   }
   
   delay(100);  // Small delay for stability
