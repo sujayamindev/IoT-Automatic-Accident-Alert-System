@@ -10,6 +10,11 @@ bool accidentDetected = false;
 bool simAvailable = false;
 unsigned long lastTelemetryUpload = 0;
 
+// SMS alert flags to prevent duplicate messages
+bool fireSMSSent = false;
+bool smokeSMSSent = false;
+bool extremeTempSMSSent = false;
+
 void setup() {
   Serial.begin(115200);
   Serial.println("\n=================================");
@@ -75,6 +80,88 @@ void loop() {
   // Read additional sensors
   bool fireDetected = sensors_isFireDetected();
   bool smokeDetected = sensors_isSmokeDetected();
+  float temperature = sensors_getTemperature();
+  bool extremeTempDetected = (temperature >= EXTREME_TEMP_THRESHOLD);
+  
+  // ===== ENVIRONMENTAL HAZARD SMS ALERTS =====
+  // Send SMS when fire, smoke, or extreme temperature is detected
+  
+  // Fire detection SMS
+  if (fireDetected && !fireSMSSent) {
+    Serial.println("\n---------------------------------");
+    Serial.println("FIRE DETECTED! Sending SMS...");
+    Serial.println("---------------------------------");
+    
+    String mapsLink = gps_getGoogleMapsLink();
+    String message = "ALERT: Fire detected! Location: " + mapsLink;
+    
+    bool smsSuccess = false;
+    if (simAvailable) {
+      smsSuccess = sim_sendSMS(PHONE_NUMBERS[0], message);
+    }
+    if (!smsSuccess) {
+      smsSuccess = sms_sendSMS(PHONE_NUMBERS[0], message);
+    }
+    
+    if (smsSuccess) {
+      Serial.println("✓ Fire alert SMS sent");
+      fireSMSSent = true;
+    }
+  } else if (!fireDetected && fireSMSSent) {
+    fireSMSSent = false;  // Reset flag when fire is no longer detected
+  }
+  
+  // Smoke detection SMS
+  if (smokeDetected && !smokeSMSSent) {
+    Serial.println("\n---------------------------------");
+    Serial.println("SMOKE DETECTED! Sending SMS...");
+    Serial.println("---------------------------------");
+    
+    String mapsLink = gps_getGoogleMapsLink();
+    String message = "ALERT: Smoke detected! Location: " + mapsLink;
+    
+    bool smsSuccess = false;
+    if (simAvailable) {
+      smsSuccess = sim_sendSMS(PHONE_NUMBERS[0], message);
+    }
+    if (!smsSuccess) {
+      smsSuccess = sms_sendSMS(PHONE_NUMBERS[0], message);
+    }
+    
+    if (smsSuccess) {
+      Serial.println("✓ Smoke alert SMS sent");
+      smokeSMSSent = true;
+    }
+  } else if (!smokeDetected && smokeSMSSent) {
+    smokeSMSSent = false;  // Reset flag when smoke is no longer detected
+  }
+  
+  // Extreme temperature SMS
+  if (extremeTempDetected && !extremeTempSMSSent) {
+    Serial.println("\n---------------------------------");
+    Serial.print("EXTREME TEMPERATURE DETECTED: ");
+    Serial.print(temperature);
+    Serial.println("°C! Sending SMS...");
+    Serial.println("---------------------------------");
+    
+    String mapsLink = gps_getGoogleMapsLink();
+    String message = "ALERT: Extreme temperature (" + String(temperature, 1) + "C) detected! Location: " + mapsLink;
+    
+    bool smsSuccess = false;
+    if (simAvailable) {
+      smsSuccess = sim_sendSMS(PHONE_NUMBERS[0], message);
+    }
+    if (!smsSuccess) {
+      smsSuccess = sms_sendSMS(PHONE_NUMBERS[0], message);
+    }
+    
+    if (smsSuccess) {
+      Serial.println("✓ Extreme temperature alert SMS sent");
+      extremeTempSMSSent = true;
+    }
+  } else if (!extremeTempDetected && extremeTempSMSSent) {
+    extremeTempSMSSent = false;  // Reset flag when temperature returns to normal
+  }
   
   // If accident detected and not already processed
   if ((impact || tilt) && !accidentDetected) {
@@ -82,6 +169,49 @@ void loop() {
     Serial.println("\n---------------------------------");
     Serial.println("ACCIDENT DETECTED!");
     Serial.println("---------------------------------");
+    
+    // IMMEDIATELY send telemetry to Firebase to record the impact
+    Serial.println("Sending impact telemetry to Firebase...");
+    
+    double lat = gps_getLatitude();
+    double lng = gps_getLongitude();
+    float speed = gps_getSpeed();
+    
+    // Get MPU6050 raw data while impact is still present
+    int16_t ax, ay, az, gx, gy, gz;
+    mpu_getRawData(&ax, &ay, &az, &gx, &gy, &gz);
+    
+    float humidity = sensors_getHumidity();
+    int mq7Level = sensors_getMQ7Smooth();
+    String gpsTimestamp = gps_getTimestamp();
+    
+    // Send telemetry immediately via available method with impact flag set to true
+    bool impactTelemetrySent = false;
+    if (GPRS_PRIMARY_MODE && simAvailable) {
+      impactTelemetrySent = api_sendTelemetryViaGPRS(
+        lat, lng, speed,
+        fireDetected, smokeDetected,
+        true,  // hasImpact = true
+        ax, ay, az, gx, gy, gz,
+        temperature, humidity, mq7Level, gpsTimestamp
+      );
+    }
+    
+    if (!impactTelemetrySent && api_isConnected()) {
+      impactTelemetrySent = api_sendTelemetry(
+        lat, lng, speed,
+        fireDetected, smokeDetected,
+        true,  // hasImpact = true
+        ax, ay, az, gx, gy, gz,
+        temperature, humidity, mq7Level, gpsTimestamp
+      );
+    }
+    
+    if (impactTelemetrySent) {
+      Serial.println("✓ Impact telemetry sent to Firebase");
+    } else {
+      Serial.println("✗ Failed to send impact telemetry");
+    }
     
     // Wait a moment for vehicle to come to a stop
     delay(100);
@@ -159,7 +289,7 @@ void loop() {
     Serial.print(" Smoke=");
     Serial.println(smokeDetected);
     
-    float temperature = sensors_getTemperature();
+    // Temperature already read earlier in loop
     float humidity = sensors_getHumidity();
     int mq7Level = sensors_getMQ7Smooth();
     String gpsTimestamp = gps_getTimestamp();
@@ -172,6 +302,7 @@ void loop() {
       telemetrySent = api_sendTelemetryViaGPRS(
         lat, lng, speed,
         fireDetected, smokeDetected,
+        false,  // hasImpact = false
         ax, ay, az, gx, gy, gz,
         temperature, humidity, mq7Level, gpsTimestamp
       );
@@ -188,6 +319,7 @@ void loop() {
           telemetrySent = api_sendTelemetry(
             lat, lng, speed,
             fireDetected, smokeDetected,
+            false,  // hasImpact = false
             ax, ay, az, gx, gy, gz,
             temperature, humidity, mq7Level, gpsTimestamp
           );
@@ -205,6 +337,7 @@ void loop() {
         telemetrySent = api_sendTelemetry(
           lat, lng, speed,
           fireDetected, smokeDetected,
+          false,  // hasImpact = false
           ax, ay, az, gx, gy, gz,
           temperature, humidity, mq7Level, gpsTimestamp
         );
@@ -216,6 +349,7 @@ void loop() {
         telemetrySent = api_sendTelemetryViaGPRS(
           lat, lng, speed,
           fireDetected, smokeDetected,
+          false,  // hasImpact = false
           ax, ay, az, gx, gy, gz,
           temperature, humidity, mq7Level, gpsTimestamp
         );

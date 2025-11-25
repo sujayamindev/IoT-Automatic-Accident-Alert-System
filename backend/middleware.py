@@ -122,6 +122,7 @@ def validate_telemetry_data(data):
             'speed': float(data['spd']),
             'fireDetected': bool(int(data['fire'])),
             'smokeDetected': bool(int(data['smoke'])),
+            'impactDetected': bool(int(data.get('impact', 0))),  # Explicit impact flag from firmware
             'gsmSignalLevel': int(data.get('gsm', 0)),
             # MPU6050 data (optional but recommended)
             'accel_x': int(data.get('accel_x', 0)),

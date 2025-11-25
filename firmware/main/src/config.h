@@ -12,7 +12,7 @@ constexpr const char* WIFI_PASSWORD = "mindev12394";
 constexpr const char* BACKEND_API_URL = "https://iot-automatic-accident-alert-system.onrender.com";
 constexpr const char* BACKEND_API_URL_HTTP = "http://iot-automatic-accident-alert-system.onrender.com";  // For GPRS (no HTTPS support)
 constexpr const char* TELEMETRY_ENDPOINT = "/api/device/uploadTelemetry";
-constexpr const int UPLOAD_INTERVAL_MS = 5000;  // 5 seconds (fixed interval)
+constexpr const int UPLOAD_INTERVAL_MS = 3000;  // 3 seconds (fixed interval)
 
 // Connection mode: false = WiFi first (GPRS fallback), true = GPRS first (WiFi fallback)
 constexpr const bool GPRS_PRIMARY_MODE = false;
@@ -31,6 +31,7 @@ constexpr const int FLAME_PIN = 35;       // Flame sensor (analog)
 // -------------------- SENSOR THRESHOLDS --------------------
 constexpr const int FLAME_THRESHOLD = 1000;     // Lower values indicate fire (analog mode)
 constexpr const int MQ7_SMOKE_THRESHOLD = 250;  // Smoothed MQ7 value indicating smoke
+constexpr const float EXTREME_TEMP_THRESHOLD = 50.0;  // Temperature in Celsius indicating extreme heat
 
 // -------------------- SMS GATEWAY CONFIGURATION --------------------
 constexpr const char* SMS_GATEWAY_IP = "10.64.62.82";

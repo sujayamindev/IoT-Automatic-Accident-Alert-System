@@ -109,3 +109,55 @@ bool sms_sendAccidentAlert(String mapsLink) {
   
   return anySuccess;
 }
+
+bool sms_sendSMS(String phoneNumber, String message) {
+  if (!sms_isConnected()) {
+    Serial.println("WiFi disconnected! Attempting to reconnect...");
+    WiFi.reconnect();
+    delay(5000);
+    
+    if (!sms_isConnected()) {
+      Serial.println("WiFi reconnection failed!");
+      return false;
+    }
+  }
+  
+  Serial.print("Sending SMS via WiFi to ");
+  Serial.println(phoneNumber);
+  
+  HTTPClient http;
+  
+  // Traccar SMS Gateway API endpoint
+  String url = "http://" + String(SMS_GATEWAY_IP) + ":" + String(SMS_GATEWAY_PORT) + "/";
+  
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("Authorization", SMS_GATEWAY_TOKEN);
+  
+  // Build JSON payload
+  String jsonPayload = "{\"to:\"\"" + phoneNumber + "\",\"message:\"\"" + jsonEscape(message) + "\"}";
+  
+  int httpCode = http.POST(jsonPayload);
+  
+  bool success = false;
+  if (httpCode > 0) {
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpCode);
+    
+    String response = http.getString();
+    Serial.println("Response: " + response);
+    
+    if (httpCode == 200) {
+      Serial.println("SMS sent successfully!");
+      success = true;
+    } else {
+      Serial.println("SMS failed!");
+    }
+  } else {
+    Serial.print("HTTP Error: ");
+    Serial.println(http.errorToString(httpCode));
+  }
+  
+  http.end();
+  return success;
+}

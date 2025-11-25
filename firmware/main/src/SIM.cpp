@@ -538,3 +538,65 @@ bool sim_sendAccidentAlert(String mapsLink) {
   
   return success;
 }
+
+bool sim_sendSMS(String phoneNumber, String message) {
+  Serial.print("Sending SMS to ");
+  Serial.println(phoneNumber);
+  
+  // Set text mode
+  sim800l.println("AT+CMGF=1");
+  delay(1000);
+  while (sim800l.available()) {
+    Serial.write(sim800l.read());
+  }
+  
+  // Start SMS command
+  sim800l.print("AT+CMGS=\"");
+  sim800l.print(phoneNumber);
+  sim800l.println("\"");
+  delay(1000);
+  
+  // Wait for > prompt
+  String prompt = "";
+  unsigned long start = millis();
+  while (millis() - start < 5000) {
+    while (sim800l.available()) {
+      char c = sim800l.read();
+      prompt += c;
+      Serial.print(c);
+    }
+    if (prompt.indexOf(">") != -1) break;
+  }
+  
+  if (prompt.indexOf(">") != -1) {
+    Serial.println("Sending message...");
+    
+    // Send message
+    sim800l.print(message);
+    delay(100);
+    sim800l.write(26);  // Ctrl+Z
+    
+    // Wait for confirmation
+    start = millis();
+    String response = "";
+    while (millis() - start < 30000) {
+      while (sim800l.available()) {
+        char c = sim800l.read();
+        response += c;
+        Serial.print(c);
+      }
+      if (response.indexOf("+CMGS:") != -1) {
+        Serial.println("SMS sent successfully!");
+        return true;
+      }
+      if (response.indexOf("ERROR") != -1) {
+        Serial.println("SMS failed!");
+        return false;
+      }
+    }
+  } else {
+    Serial.println("No > prompt!");
+  }
+  
+  return false;
+}

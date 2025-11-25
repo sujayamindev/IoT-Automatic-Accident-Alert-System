@@ -61,6 +61,7 @@ bool api_sendTelemetry(
   float speed,
   bool fireDetected,
   bool smokeDetected,
+  bool hasImpact,
   int16_t accel_x,
   int16_t accel_y,
   int16_t accel_z,
@@ -95,6 +96,7 @@ bool api_sendTelemetry(
   doc["spd"] = speed;
   doc["fire"] = fireDetected ? 1 : 0;
   doc["smoke"] = smokeDetected ? 1 : 0;
+  doc["impact"] = hasImpact ? 1 : 0;
   
   // MPU6050 data
   doc["accel_x"] = accel_x;
@@ -184,6 +186,7 @@ bool api_sendTelemetryViaGPRS(
   float speed,
   bool fireDetected,
   bool smokeDetected,
+  bool hasImpact,
   int16_t accel_x,
   int16_t accel_y,
   int16_t accel_z,
@@ -208,6 +211,7 @@ bool api_sendTelemetryViaGPRS(
   doc["spd"] = speed;
   doc["fire"] = fireDetected ? 1 : 0;
   doc["smoke"] = smokeDetected ? 1 : 0;
+  doc["impact"] = hasImpact ? 1 : 0;
   
   // MPU6050 data
   doc["accel_x"] = accel_x;

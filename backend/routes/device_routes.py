@@ -59,11 +59,17 @@ def upload_telemetry():
             logger.warning(f"Invalid telemetry data: {error_msg}")
             return jsonify({'error': error_msg}), 400
         
-        # Check for high impact based on MPU data and add to telemetry
-        impact_threshold = 25000
-        has_high_impact = (abs(cleaned_data['accel_x']) > impact_threshold or 
-                          abs(cleaned_data['accel_y']) > impact_threshold or 
-                          abs(cleaned_data['accel_z']) > impact_threshold)
+        # Trust firmware's impact detection flag (real-time detection is more accurate than post-transmission analysis)
+        # Firmware sends impactDetected=true when mpu_detectImpact() or mpu_detectTilt() triggers
+        has_high_impact = cleaned_data['impactDetected']
+        
+        # Optional: Also check accelerometer values as backup (in case firmware didn't send impact flag)
+        if not has_high_impact:
+            impact_threshold = 25000
+            has_high_impact = (abs(cleaned_data['accel_x']) > impact_threshold or 
+                              abs(cleaned_data['accel_y']) > impact_threshold or 
+                              abs(cleaned_data['accel_z']) > impact_threshold)
+        
         cleaned_data['hasHighImpact'] = has_high_impact
         
         # Store in Firebase (user_id and mac_address are set by middleware)

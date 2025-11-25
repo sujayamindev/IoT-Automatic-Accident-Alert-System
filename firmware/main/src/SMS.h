@@ -10,6 +10,10 @@ void sms_init();
 // Returns true if at least one SMS was sent successfully, false otherwise
 bool sms_sendAccidentAlert(String mapsLink);
 
+// Send generic SMS message via WiFi gateway
+// Returns true if successful, false if failed
+bool sms_sendSMS(String phoneNumber, String message);
+
 // Check if WiFi is connected
 bool sms_isConnected();
 
