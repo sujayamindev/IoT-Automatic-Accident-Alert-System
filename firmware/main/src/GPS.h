@@ -21,5 +21,7 @@ float gps_getLatitude();
 float gps_getLongitude();
 float gps_getSpeed();
 bool gps_isLocationValid();
+String gps_getTimestamp();           // Get GPS timestamp in ISO 8601 format with +0530 timezone
+String gps_getFormattedTimestamp();  // Get human-readable GPS timestamp
 
 #endif

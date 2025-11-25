@@ -85,3 +85,67 @@ float gps_getSpeed() {
 bool gps_isLocationValid() {
   return gps.location.isValid();
 }
+
+String gps_getTimestamp() {
+  if (!gps.date.isValid() || !gps.time.isValid()) {
+    return "";
+  }
+  
+  // Get UTC time from GPS
+  int year = gps.date.year();
+  int month = gps.date.month();
+  int day = gps.date.day();
+  int hour = gps.time.hour();
+  int minute = gps.time.minute();
+  int second = gps.time.second();
+  
+  // Convert to IST (+05:30)
+  minute += 30;
+  if (minute >= 60) {
+    minute -= 60;
+    hour += 1;
+  }
+  hour += 5;
+  if (hour >= 24) {
+    hour -= 24;
+    day += 1;
+    // Simple day overflow handling (doesn't account for month end)
+  }
+  
+  // Format as ISO 8601: YYYY-MM-DDTHH:MM:SS+05:30
+  char timestamp[35];
+  sprintf(timestamp, "%04d-%02d-%02dT%02d:%02d:%02d+05:30", 
+          year, month, day, hour, minute, second);
+  return String(timestamp);
+}
+
+String gps_getFormattedTimestamp() {
+  if (!gps.date.isValid() || !gps.time.isValid()) {
+    return "No GPS time";
+  }
+  
+  // Get UTC time from GPS
+  int year = gps.date.year();
+  int month = gps.date.month();
+  int day = gps.date.day();
+  int hour = gps.time.hour();
+  int minute = gps.time.minute();
+  int second = gps.time.second();
+  
+  // Convert to IST (+05:30)
+  minute += 30;
+  if (minute >= 60) {
+    minute -= 60;
+    hour += 1;
+  }
+  hour += 5;
+  if (hour >= 24) {
+    hour -= 24;
+    day += 1;
+  }
+  
+  char timestamp[35];
+  sprintf(timestamp, "%04d-%02d-%02d %02d:%02d:%02d IST", 
+          year, month, day, hour, minute, second);
+  return String(timestamp);
+}
