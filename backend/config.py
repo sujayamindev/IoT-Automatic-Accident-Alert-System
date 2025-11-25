@@ -22,9 +22,6 @@ class Config:
     
     # Device Authentication
     DEVICE_SECRET_KEY = os.getenv('DEVICE_SECRET_KEY', '')
-    
-    # Data Retention (1 hour = 3600 seconds)
-    TELEMETRY_RETENTION_SECONDS = int(os.getenv('TELEMETRY_RETENTION_SECONDS', 3600))
-    
+        
     # CORS
     CORS_ORIGINS = ['*']  # Update in production to specific domains

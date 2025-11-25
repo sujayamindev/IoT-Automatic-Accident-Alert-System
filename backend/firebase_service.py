@@ -109,7 +109,7 @@ class FirebaseService:
     
     def store_telemetry(self, user_id, mac_address, telemetry_data):
         """
-        Store telemetry data in Firebase RTDB
+        Store telemetry data in Firebase RTDB (latest) and Firestore (history)
         
         Args:
             user_id: Firebase user ID
@@ -120,27 +120,41 @@ class FirebaseService:
             bool: Success status
         """
         try:
-            timestamp = datetime.utcnow().isoformat()
-            telemetry_data['timestamp'] = timestamp
+            timestamp = datetime.utcnow()
+            timestamp_iso = timestamp.isoformat()
+            telemetry_data['timestamp'] = timestamp_iso
             telemetry_data['deviceId'] = mac_address
             
-            # Store latest telemetry in RTDB (will be auto-migrated to Firestore after 1 hour)
+            logger.info(f"Storing telemetry for user {user_id}, device {mac_address}")
+            
+            # Store latest telemetry in RTDB (for real-time access)
             ref = self.db.reference(f'/users/{user_id}/devices/{mac_address}/telemetry/latest')
             ref.set(telemetry_data)
+            logger.info(f"✓ RTDB updated for {mac_address}")
             
-            # Store timestamped telemetry (for 1-hour retention)
-            timestamp_key = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
-            history_ref = self.db.reference(f'/users/{user_id}/devices/{mac_address}/telemetry/history/{timestamp_key}')
-            history_ref.set(telemetry_data)
+            # Store historical telemetry directly in Firestore
+            firestore_data = {
+                **telemetry_data,
+                'createdAt': timestamp,
+                'userId': user_id,
+                'macAddress': mac_address
+            }
+            
+            # Add document to Firestore
+            update_time, doc_ref = self.firestore_db.collection('users').document(user_id)\
+                .collection('devices').document(mac_address)\
+                .collection('telemetry').add(firestore_data)
+            
+            logger.info(f"✓ Firestore document created: {doc_ref.id} at {update_time}")
             
             # Update last seen
             device_ref = self.db.reference(f'/users/{user_id}/devices/{mac_address}')
-            device_ref.update({'lastSeen': timestamp})
+            device_ref.update({'lastSeen': timestamp_iso})
             
-            logger.debug(f"Telemetry stored for device {mac_address}")
+            logger.info(f"✓ Telemetry stored successfully for device {mac_address}")
             return True
         except Exception as e:
-            logger.error(f"Error storing telemetry: {e}")
+            logger.error(f"✗ Error storing telemetry: {e}", exc_info=True)
             return False
     
     def get_latest_telemetry(self, user_id, mac_address):
@@ -263,56 +277,39 @@ class FirebaseService:
             logger.error(f"Error deleting contact: {e}")
             return False
     
-    def migrate_old_telemetry_to_firestore(self):
+    def get_telemetry_history(self, user_id, mac_address, limit=50):
         """
-        Migrate telemetry data older than 1 hour from RTDB to Firestore
-        This should be called periodically by a scheduler
+        Get telemetry history from Firestore
+        
+        Args:
+            user_id: Firebase user ID
+            mac_address: Device MAC address
+            limit: Number of records to return
+            
+        Returns:
+            List of telemetry records
         """
         try:
-            cutoff_time = datetime.utcnow() - timedelta(seconds=Config.TELEMETRY_RETENTION_SECONDS)
-            cutoff_key = cutoff_time.strftime('%Y%m%d_%H%M%S')
+            docs = self.firestore_db.collection('users').document(user_id)\
+                .collection('devices').document(mac_address)\
+                .collection('telemetry')\
+                .order_by('createdAt', direction=firestore.Query.DESCENDING)\
+                .limit(limit)\
+                .stream()
             
-            # Get all users
-            users_ref = self.db.reference('/users')
-            users = users_ref.get()
+            telemetry_list = []
+            for doc in docs:
+                data = doc.to_dict()
+                data['id'] = doc.id
+                # Convert timestamp to ISO string if it's a datetime
+                if 'createdAt' in data and hasattr(data['createdAt'], 'isoformat'):
+                    data['createdAt'] = data['createdAt'].isoformat()
+                telemetry_list.append(data)
             
-            if not users:
-                return
-            
-            migrated_count = 0
-            for user_id, user_data in users.items():
-                if 'devices' not in user_data:
-                    continue
-                
-                for mac_address, device_data in user_data['devices'].items():
-                    if 'telemetry' not in device_data or 'history' not in device_data['telemetry']:
-                        continue
-                    
-                    history = device_data['telemetry']['history']
-                    for timestamp_key, telemetry in history.items():
-                        # Check if older than cutoff
-                        if timestamp_key < cutoff_key:
-                            # Store in Firestore
-                            doc_ref = self.firestore_db.collection('telemetry_history') \
-                                .document(user_id) \
-                                .collection('devices') \
-                                .document(mac_address) \
-                                .collection('data') \
-                                .document(timestamp_key)
-                            doc_ref.set(telemetry)
-                            
-                            # Delete from RTDB
-                            old_ref = self.db.reference(
-                                f'/users/{user_id}/devices/{mac_address}/telemetry/history/{timestamp_key}'
-                            )
-                            old_ref.delete()
-                            
-                            migrated_count += 1
-            
-            if migrated_count > 0:
-                logger.info(f"Migrated {migrated_count} telemetry records to Firestore")
+            return telemetry_list
         except Exception as e:
-            logger.error(f"Error migrating telemetry: {e}")
+            logger.error(f"Error getting telemetry history: {e}")
+            return []
     
     def verify_firebase_token(self, id_token):
         """

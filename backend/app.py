@@ -4,14 +4,12 @@ IoT Accident Alert System Backend
 """
 from flask import Flask, jsonify
 from flask_cors import CORS
-from apscheduler.schedulers.background import BackgroundScheduler
 from config import Config
 from firebase_service import FirebaseService
 from middleware import init_middleware
 from routes.device_routes import device_bp, init_routes as init_device_routes
 from routes.app_routes import app_bp, init_routes as init_app_routes
 import logging
-import atexit
 
 # Configure logging
 logging.basicConfig(
@@ -45,23 +43,6 @@ init_app_routes(firebase_service)
 # Register blueprints
 app.register_blueprint(device_bp)
 app.register_blueprint(app_bp)
-
-
-# Background scheduler for data migration
-scheduler = BackgroundScheduler()
-scheduler.add_job(
-    func=firebase_service.migrate_old_telemetry_to_firestore,
-    trigger="interval",
-    minutes=15,  # Run every 15 minutes
-    id='migrate_telemetry',
-    name='Migrate old telemetry to Firestore',
-    replace_existing=True
-)
-scheduler.start()
-logger.info("Background scheduler started for telemetry migration")
-
-# Shut down the scheduler when exiting the app
-atexit.register(lambda: scheduler.shutdown())
 
 
 @app.route('/')
