@@ -18,8 +18,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadData();
-    // Auto-refresh every 5 seconds
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    // Auto-refresh every 2 seconds for faster updates
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       _loadData();
     });
   }
@@ -210,41 +210,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 1.3,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildActionButton(
-                          context,
-                          'Live Tracking',
-                          Icons.location_on,
-                          Colors.blue,
-                          '/tracking',
+                        Expanded(
+                          child: _buildActionButton(
+                            context,
+                            'Live Tracking',
+                            Icons.location_on,
+                            Colors.blue,
+                            '/tracking',
+                          ),
                         ),
-                        _buildActionButton(
-                          context,
-                          'History',
-                          Icons.history,
-                          Colors.green,
-                          '/history',
-                        ),
-                        _buildActionButton(
-                          context,
-                          'Settings',
-                          Icons.settings,
-                          Colors.orange,
-                          '/settings',
-                        ),
-                        _buildActionButton(
-                          context,
-                          'Alerts',
-                          Icons.warning,
-                          Colors.red,
-                          '/history',
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildActionButton(
+                            context,
+                            'Alert History',
+                            Icons.history,
+                            Colors.green,
+                            '/history',
+                          ),
                         ),
                       ],
                     ),

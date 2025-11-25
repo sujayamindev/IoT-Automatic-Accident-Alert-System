@@ -15,7 +15,7 @@ constexpr const char* TELEMETRY_ENDPOINT = "/api/device/uploadTelemetry";
 constexpr const int UPLOAD_INTERVAL_MS = 5000;  // 5 seconds (fixed interval)
 
 // Connection mode: false = WiFi first (GPRS fallback), true = GPRS first (WiFi fallback)
-constexpr const bool GPRS_PRIMARY_MODE = true;
+constexpr const bool GPRS_PRIMARY_MODE = false;
 
 // -------------------- GPRS CONFIGURATION --------------------
 constexpr const char* GPRS_APN = "dialogbb";           // Dialog SIM APN

@@ -21,8 +21,8 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
   void initState() {
     super.initState();
     _loadData();
-    // Auto-refresh every 5 seconds
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    // Auto-refresh every 2 seconds for faster updates
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       _loadData();
     });
   }

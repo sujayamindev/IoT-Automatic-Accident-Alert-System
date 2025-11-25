@@ -59,6 +59,13 @@ def upload_telemetry():
             logger.warning(f"Invalid telemetry data: {error_msg}")
             return jsonify({'error': error_msg}), 400
         
+        # Check for high impact based on MPU data and add to telemetry
+        impact_threshold = 25000
+        has_high_impact = (abs(cleaned_data['accel_x']) > impact_threshold or 
+                          abs(cleaned_data['accel_y']) > impact_threshold or 
+                          abs(cleaned_data['accel_z']) > impact_threshold)
+        cleaned_data['hasHighImpact'] = has_high_impact
+        
         # Store in Firebase (user_id and mac_address are set by middleware)
         success = firebase_service.store_telemetry(
             request.user_id,
@@ -89,11 +96,8 @@ def upload_telemetry():
             })
             alert_triggered = True
         
-        # Check for high impact based on MPU data
-        impact_threshold = 25000
-        if (abs(cleaned_data['accel_x']) > impact_threshold or 
-            abs(cleaned_data['accel_y']) > impact_threshold or 
-            abs(cleaned_data['accel_z']) > impact_threshold):
+        # Store alert for high impact
+        if has_high_impact:
             firebase_service.store_alert(request.user_id, request.mac_address, {
                 'type': 'impact',
                 'latitude': cleaned_data['latitude'],

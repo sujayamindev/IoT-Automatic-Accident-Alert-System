@@ -26,9 +26,13 @@ class TelemetryProvider with ChangeNotifier {
 
   // Get live telemetry data
   Future<void> fetchLiveData(UserProvider userProvider) async {
-    _isLoading = true;
+    // Don't set loading if we already have data (prevents flicker)
+    if (_currentTelemetry == null) {
+      _isLoading = true;
+      notifyListeners();
+    }
+    
     _errorMessage = null;
-    notifyListeners();
 
     try {
       if (useMockData) {

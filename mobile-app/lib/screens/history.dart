@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/telemetry_provider.dart';
 import '../providers/user_provider.dart';
-import '../models/trip.dart';
 import '../models/alert.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -13,30 +12,17 @@ class HistoryScreen extends StatefulWidget {
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
+class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _loadData();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadData() async {
     final telemetryProvider = Provider.of<TelemetryProvider>(context, listen: false);
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    await Future.wait([
-      telemetryProvider.fetchTripHistory(userProvider),
-      telemetryProvider.fetchAlertsHistory(userProvider),
-    ]);
+    await telemetryProvider.fetchAlertsHistory(userProvider);
   }
 
   Future<void> _handleRefresh() async {
@@ -47,87 +33,9 @@ class _HistoryScreenState extends State<HistoryScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('History'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Trips', icon: Icon(Icons.route)),
-            Tab(text: 'Alerts', icon: Icon(Icons.warning)),
-          ],
-        ),
+        title: const Text('Alert History'),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildTripHistory(),
-          _buildAlertHistory(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTripHistory() {
-    final telemetryProvider = Provider.of<TelemetryProvider>(context);
-
-    if (telemetryProvider.isLoading && telemetryProvider.trips.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (telemetryProvider.trips.isEmpty) {
-      return const Center(child: Text('No trips recorded yet'));
-    }
-
-    return RefreshIndicator(
-      onRefresh: _handleRefresh,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(8.0),
-        itemCount: telemetryProvider.trips.length,
-        itemBuilder: (context, index) {
-          final trip = telemetryProvider.trips[index];
-          return _buildTripCard(trip);
-        },
-      ),
-    );
-  }
-
-  Widget _buildTripCard(Trip trip) {
-    final dateFormat = DateFormat('MMM dd, yyyy');
-    final timeFormat = DateFormat('HH:mm');
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-      child: ListTile(
-        leading: const CircleAvatar(
-          backgroundColor: Colors.blue,
-          child: Icon(Icons.directions_car, color: Colors.white),
-        ),
-        title: Text(
-          dateFormat.format(trip.startTime),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${timeFormat.format(trip.startTime)} - ${timeFormat.format(trip.endTime)}'),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.route, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text('${trip.distance.toStringAsFixed(1)} km'),
-                const SizedBox(width: 16),
-                Icon(Icons.speed, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text('Max: ${trip.maxSpeed.toStringAsFixed(0)} km/h'),
-              ],
-            ),
-          ],
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () {
-          Navigator.of(context).pushNamed('/trip-details', arguments: trip.id);
-        },
-      ),
+      body: _buildAlertHistory(),
     );
   }
 

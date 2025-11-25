@@ -141,24 +141,36 @@ bool sim_initGPRS() {
     return true;
   }
   
-  Serial.println("Initializing GPRS connection...");
+  Serial.println("\n=== Initializing GPRS connection ===");
   
   // Close any existing connection
+  Serial.println("Step 1: Closing existing connections (AT+CIPSHUT)...");
   sim800l.println("AT+CIPSHUT");
   delay(2000);
+  String response = "";
   while (sim800l.available()) {
-    Serial.write(sim800l.read());
+    char c = sim800l.read();
+    response += c;
+    Serial.write(c);
   }
+  Serial.println("CIPSHUT Response: " + response);
   
   // Set connection mode to single IP connection
+  Serial.println("Step 2: Setting single connection mode (AT+CIPMUX=0)...");
   sim800l.println("AT+CIPMUX=0");
   delay(1000);
+  response = "";
   while (sim800l.available()) {
-    Serial.write(sim800l.read());
+    char c = sim800l.read();
+    response += c;
+    Serial.write(c);
   }
+  Serial.println("CIPMUX Response: " + response);
   
   // Configure APN
-  Serial.println("Setting APN...");
+  Serial.println("Step 3: Configuring APN (AT+CSTT)...");
+  Serial.print("APN: ");
+  Serial.println(GPRS_APN);
   sim800l.print("AT+CSTT=\"");
   sim800l.print(GPRS_APN);
   sim800l.print("\",\"");
@@ -168,41 +180,55 @@ bool sim_initGPRS() {
   sim800l.println("\"");
   delay(2000);
   
-  String response = "";
+  response = "";
   while (sim800l.available()) {
     char c = sim800l.read();
     response += c;
     Serial.print(c);
   }
+  Serial.println("CSTT Response: " + response);
   
   if (response.indexOf("ERROR") != -1) {
-    Serial.println("APN configuration failed");
+    Serial.println("✗ APN configuration failed!");
     return false;
   }
+  Serial.println("✓ APN configured");
   
   // Bring up wireless connection
-  Serial.println("Bringing up GPRS...");
+  Serial.println("Step 4: Bringing up wireless connection (AT+CIICR)...");
+  Serial.println("This may take 5-15 seconds...");
   sim800l.println("AT+CIICR");
-  delay(5000);  // Wait longer for GPRS to connect
   
   response = "";
   unsigned long start = millis();
-  while (millis() - start < 10000) {
+  bool gotResponse = false;
+  while (millis() - start < 15000) {  // Increased timeout to 15 seconds
     while (sim800l.available()) {
       char c = sim800l.read();
       response += c;
       Serial.print(c);
     }
-    if (response.indexOf("OK") != -1) break;
+    if (response.indexOf("OK") != -1 || response.indexOf("ERROR") != -1) {
+      gotResponse = true;
+      break;
+    }
+    delay(100);
   }
   
-  if (response.indexOf("ERROR") != -1) {
-    Serial.println("GPRS connection failed");
+  if (!gotResponse) {
+    Serial.println("✗ Timeout waiting for GPRS connection!");
     return false;
   }
   
+  if (response.indexOf("ERROR") != -1) {
+    Serial.println("✗ GPRS connection failed!");
+    Serial.println("Response: " + response);
+    return false;
+  }
+  Serial.println("✓ GPRS connection established");
+  
   // Get local IP address
-  Serial.println("Getting IP address...");
+  Serial.println("Step 5: Getting IP address (AT+CIFSR)...");
   sim800l.println("AT+CIFSR");
   delay(2000);
   
@@ -212,14 +238,16 @@ bool sim_initGPRS() {
     response += c;
     Serial.print(c);
   }
+  Serial.println("CIFSR Response: " + response);
   
   // Check if we got a valid IP (not ERROR)
   if (response.indexOf("ERROR") != -1 || response.length() < 7) {
-    Serial.println("Failed to get IP address");
+    Serial.println("✗ Failed to get IP address!");
     return false;
   }
   
-  Serial.println("GPRS connected successfully!");
+  Serial.println("✓✓✓ GPRS connected successfully! ✓✓✓");
+  Serial.println("==================================\n");
   gprsInitialized = true;
   gprsConnected = true;
   return true;
@@ -228,23 +256,59 @@ bool sim_initGPRS() {
 bool sim_sendHTTPPost(String url, String jsonPayload) {
   // Ensure GPRS is initialized
   if (!gprsConnected && !sim_initGPRS()) {
-    Serial.println("Cannot send HTTP: GPRS not connected");
+    Serial.println("✗ Cannot send HTTP: GPRS not connected");
     return false;
   }
   
-  Serial.println("Sending HTTP POST via GPRS...");
+  Serial.println("\n=== Sending HTTP POST via GPRS ===");
   Serial.println("URL: " + url);
   Serial.println("Payload size: " + String(jsonPayload.length()) + " bytes");
   
+  // Setup bearer profile for HTTP (important!)
+  Serial.println("Setting up bearer profile...");
+  sim800l.println("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"");
+  delay(500);
+  while (sim800l.available()) Serial.write(sim800l.read());
+  
+  sim800l.print("AT+SAPBR=3,1,\"APN\",\"");
+  sim800l.print(GPRS_APN);
+  sim800l.println("\"");
+  delay(500);
+  while (sim800l.available()) Serial.write(sim800l.read());
+  
+  sim800l.println("AT+SAPBR=1,1");
+  delay(2000);
+  while (sim800l.available()) Serial.write(sim800l.read());
+  
   // Initialize HTTP service
+  Serial.println("Initializing HTTP service...");
   sim800l.println("AT+HTTPINIT");
   delay(1000);
   String response = "";
   while (sim800l.available()) {
     response += (char)sim800l.read();
   }
-  Serial.print("HTTP INIT: ");
+  Serial.print("HTTP INIT Response: ");
   Serial.println(response);
+  
+  if (response.indexOf("ERROR") != -1) {
+    Serial.println("✗ HTTP INIT failed, trying to terminate first...");
+    sim800l.println("AT+HTTPTERM");
+    delay(1000);
+    while (sim800l.available()) Serial.write(sim800l.read());
+    
+    sim800l.println("AT+HTTPINIT");
+    delay(1000);
+    response = "";
+    while (sim800l.available()) {
+      response += (char)sim800l.read();
+    }
+    if (response.indexOf("ERROR") != -1) {
+      Serial.println("✗ HTTP INIT still failed");
+      return false;
+    }
+  }
+  Serial.println("✓ HTTP service initialized");
   
   // Set HTTP parameters - CID (bearer profile identifier)
   sim800l.println("AT+HTTPPARA=\"CID\",1");

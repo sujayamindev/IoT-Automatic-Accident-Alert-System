@@ -147,6 +147,18 @@ void loop() {
     int16_t ax, ay, az, gx, gy, gz;
     mpu_getRawData(&ax, &ay, &az, &gx, &gy, &gz);
     
+    // Debug: Print accelerometer values
+    Serial.print("Accel: X=");
+    Serial.print(ax);
+    Serial.print(" Y=");
+    Serial.print(ay);
+    Serial.print(" Z=");
+    Serial.print(az);
+    Serial.print(" | Fire=");
+    Serial.print(fireDetected);
+    Serial.print(" Smoke=");
+    Serial.println(smokeDetected);
+    
     float temperature = sensors_getTemperature();
     float humidity = sensors_getHumidity();
     int mq7Level = sensors_getMQ7Smooth();
@@ -154,31 +166,60 @@ void loop() {
     
     bool telemetrySent = false;
     
-    // Try WiFi first (current mode: WiFi primary)
-    if (!api_isConnected()) {
-      Serial.println("WiFi disconnected, reconnecting...");
-      api_init();
-    }
-    
-    if (api_isConnected()) {
-      Serial.println("Attempting telemetry via WiFi...");
-      telemetrySent = api_sendTelemetry(
-        lat, lng, speed,
-        fireDetected, smokeDetected,
-        ax, ay, az, gx, gy, gz,
-        temperature, humidity, mq7Level, gpsTimestamp
-      );
-    }
-    
-    // Fallback to GPRS if WiFi failed
-    if (!telemetrySent && simAvailable) {
-      Serial.println("WiFi failed, attempting telemetry via GPRS...");
+    // GPRS Primary Mode - Try GPRS first, WiFi as fallback
+    if (GPRS_PRIMARY_MODE && simAvailable) {
+      Serial.println("Attempting telemetry via GPRS (primary)...");
       telemetrySent = api_sendTelemetryViaGPRS(
         lat, lng, speed,
         fireDetected, smokeDetected,
         ax, ay, az, gx, gy, gz,
         temperature, humidity, mq7Level, gpsTimestamp
       );
+      
+      // Fallback to WiFi if GPRS failed
+      if (!telemetrySent) {
+        Serial.println("GPRS failed, attempting telemetry via WiFi...");
+        if (!api_isConnected()) {
+          Serial.println("WiFi disconnected, reconnecting...");
+          api_init();
+        }
+        
+        if (api_isConnected()) {
+          telemetrySent = api_sendTelemetry(
+            lat, lng, speed,
+            fireDetected, smokeDetected,
+            ax, ay, az, gx, gy, gz,
+            temperature, humidity, mq7Level, gpsTimestamp
+          );
+        }
+      }
+    } else {
+      // WiFi Primary Mode (legacy) - Try WiFi first, GPRS as fallback
+      if (!api_isConnected()) {
+        Serial.println("WiFi disconnected, reconnecting...");
+        api_init();
+      }
+      
+      if (api_isConnected()) {
+        Serial.println("Attempting telemetry via WiFi (primary)...");
+        telemetrySent = api_sendTelemetry(
+          lat, lng, speed,
+          fireDetected, smokeDetected,
+          ax, ay, az, gx, gy, gz,
+          temperature, humidity, mq7Level, gpsTimestamp
+        );
+      }
+      
+      // Fallback to GPRS if WiFi failed
+      if (!telemetrySent && simAvailable) {
+        Serial.println("WiFi failed, attempting telemetry via GPRS...");
+        telemetrySent = api_sendTelemetryViaGPRS(
+          lat, lng, speed,
+          fireDetected, smokeDetected,
+          ax, ay, az, gx, gy, gz,
+          temperature, humidity, mq7Level, gpsTimestamp
+        );
+      }
     }
     
     if (!telemetrySent) {
