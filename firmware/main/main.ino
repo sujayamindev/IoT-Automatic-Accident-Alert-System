@@ -150,7 +150,6 @@ void loop() {
     float temperature = sensors_getTemperature();
     float humidity = sensors_getHumidity();
     int mq7Level = sensors_getMQ7Smooth();
-    int flameState = sensors_getFlameState();
     String gpsTimestamp = gps_getTimestamp();
     
     bool telemetrySent = false;
@@ -167,7 +166,7 @@ void loop() {
         lat, lng, speed,
         fireDetected, smokeDetected,
         ax, ay, az, gx, gy, gz,
-        temperature, humidity, mq7Level, flameState, gpsTimestamp
+        temperature, humidity, mq7Level, gpsTimestamp
       );
     }
     
@@ -178,7 +177,7 @@ void loop() {
         lat, lng, speed,
         fireDetected, smokeDetected,
         ax, ay, az, gx, gy, gz,
-        temperature, humidity, mq7Level, flameState, gpsTimestamp
+        temperature, humidity, mq7Level, gpsTimestamp
       );
     }
     

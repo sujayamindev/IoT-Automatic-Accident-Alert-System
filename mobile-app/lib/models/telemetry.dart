@@ -19,7 +19,6 @@ class Telemetry {
   final double temperature;
   final double humidity;
   final int coLevel;
-  final int flameLevel;
   
   // GPS timestamp
   final String? gpsTimestamp;
@@ -41,7 +40,6 @@ class Telemetry {
     this.temperature = 0.0,
     this.humidity = 0.0,
     this.coLevel = 0,
-    this.flameLevel = 0,
     this.gpsTimestamp,
   });
 
@@ -63,7 +61,6 @@ class Telemetry {
       temperature: json['temperature']?.toDouble() ?? 0.0,
       humidity: json['humidity']?.toDouble() ?? 0.0,
       coLevel: json['coLevel'] ?? 0,
-      flameLevel: json['flameLevel'] ?? 0,
       gpsTimestamp: json['gpsTimestamp'],
     );
   }
@@ -86,7 +83,6 @@ class Telemetry {
       'temperature': temperature,
       'humidity': humidity,
       'coLevel': coLevel,
-      'flameLevel': flameLevel,
       'gpsTimestamp': gpsTimestamp,
     };
   }

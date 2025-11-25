@@ -134,7 +134,6 @@ def validate_telemetry_data(data):
             'temperature': float(data.get('temp', 0.0)),
             'humidity': float(data.get('humidity', 0.0)),
             'coLevel': int(data.get('coLevel', 0)),
-            'flameLevel': int(data.get('flameLevel', 0)),
             'gpsTimestamp': data.get('gpsTimestamp', '')
         }
         

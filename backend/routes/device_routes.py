@@ -37,9 +37,8 @@ def upload_telemetry():
     - temp: Temperature (optional)
     - humidity: Humidity (optional)
     - coLevel: CO sensor level (optional)
-    - flameLevel: Flame sensor level (optional)
     - gpsTimestamp: GPS timestamp in ISO 8601 format (optional)
-    - gsm: GSM signal level (optional, 0-5)
+    - gsm: GSM signal level (optional, 0-31)
     
     Returns:
     - 200: Success

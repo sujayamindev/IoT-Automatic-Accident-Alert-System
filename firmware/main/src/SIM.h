@@ -24,4 +24,7 @@ void sim_terminateGPRS();
 // Returns true if successful, false if failed
 bool sim_sendAccidentAlert(String mapsLink);
 
+// Get GSM signal strength (0-31, 99=unknown)
+int sim_getSignalStrength();
+
 #endif

@@ -70,6 +70,34 @@ void sim_init() {
   Serial.println("SIM800L Ready!");
 }
 
+int sim_getSignalStrength() {
+  sim800l.println("AT+CSQ");
+  delay(500);
+  
+  String response = "";
+  unsigned long start = millis();
+  while (millis() - start < 1000) {
+    while (sim800l.available()) {
+      response += (char)sim800l.read();
+    }
+  }
+  
+  // Parse response: +CSQ: <rssi>,<ber>
+  // rssi: 0-31 (signal strength), 99 = not known or not detectable
+  int csqIndex = response.indexOf("+CSQ:");
+  if (csqIndex != -1) {
+    int commaIndex = response.indexOf(",", csqIndex);
+    if (commaIndex != -1) {
+      String rssiStr = response.substring(csqIndex + 6, commaIndex);
+      rssiStr.trim();
+      int rssi = rssiStr.toInt();
+      return rssi;
+    }
+  }
+  
+  return 0;  // Return 0 if unable to read
+}
+
 bool sim_isModuleWorking() {
   // Send AT command
   sim800l.println("AT");

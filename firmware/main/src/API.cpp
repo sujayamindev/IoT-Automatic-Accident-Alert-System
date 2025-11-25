@@ -70,7 +70,6 @@ bool api_sendTelemetry(
   float temperature,
   float humidity,
   int coLevel,
-  int flameLevel,
   String gpsTimestamp
 ) {
   if (!api_isConnected()) {
@@ -109,15 +108,14 @@ bool api_sendTelemetry(
   doc["temp"] = temperature;
   doc["humidity"] = humidity;
   doc["coLevel"] = coLevel;
-  doc["flameLevel"] = flameLevel;
   
   // Add GPS timestamp if available
   if (gpsTimestamp.length() > 0) {
     doc["gpsTimestamp"] = gpsTimestamp;
   }
   
-  // Optional: Add GSM signal level (0 for WiFi)
-  doc["gsm"] = 0;
+  // Optional: Add GSM signal level (0 for WiFi, actual value when available)
+  doc["gsm"] = 0;  // WiFi mode doesn't use GSM
   
   String jsonPayload;
   serializeJson(doc, jsonPayload);
@@ -195,7 +193,6 @@ bool api_sendTelemetryViaGPRS(
   float temperature,
   float humidity,
   int coLevel,
-  int flameLevel,
   String gpsTimestamp
 ) {
   Serial.println("Sending telemetry via GPRS...");
@@ -224,15 +221,15 @@ bool api_sendTelemetryViaGPRS(
   doc["temp"] = temperature;
   doc["humidity"] = humidity;
   doc["coLevel"] = coLevel;
-  doc["flameLevel"] = flameLevel;
   
   // GPS timestamp
   if (gpsTimestamp.length() > 0) {
     doc["gpsTimestamp"] = gpsTimestamp;
   }
   
-  // GSM signal level (could read actual signal from SIM module)
-  doc["gsm"] = 1;  // Indicate GPRS mode
+  // GSM signal level - get actual signal strength from SIM module
+  int signalStrength = sim_getSignalStrength();
+  doc["gsm"] = signalStrength;
   
   String jsonPayload;
   serializeJson(doc, jsonPayload);

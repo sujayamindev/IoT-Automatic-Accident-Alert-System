@@ -22,7 +22,6 @@ bool api_sendTelemetry(
   float temperature,
   float humidity,
   int coLevel,
-  int flameLevel,
   String gpsTimestamp
 );
 
@@ -48,7 +47,6 @@ bool api_sendTelemetryViaGPRS(
   float temperature,
   float humidity,
   int coLevel,
-  int flameLevel,
   String gpsTimestamp
 );
 
