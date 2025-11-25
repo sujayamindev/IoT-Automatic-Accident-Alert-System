@@ -50,7 +50,7 @@ bool sms_isConnected() {
   return WiFi.status() == WL_CONNECTED;
 }
 
-void sms_sendAccidentAlert(String mapsLink) {
+bool sms_sendAccidentAlert(String mapsLink) {
   if (!sms_isConnected()) {
     Serial.println("WiFi disconnected! Attempting to reconnect...");
     WiFi.reconnect();
@@ -58,11 +58,12 @@ void sms_sendAccidentAlert(String mapsLink) {
     
     if (!sms_isConnected()) {
       Serial.println("WiFi reconnection failed!");
-      return;
+      return false;
     }
   }
   
   String message = "ACCIDENT ALERT!\nVehicle has stopped.\nLocation: " + mapsLink;
+  bool anySuccess = false;
   
   // Send SMS to all numbers
   int numPhones = sizeof(PHONE_NUMBERS) / sizeof(PHONE_NUMBERS[0]);
@@ -93,6 +94,7 @@ void sms_sendAccidentAlert(String mapsLink) {
       
       if (httpCode == 200) {
         Serial.println("SMS sent successfully!");
+        anySuccess = true;
       } else {
         Serial.println("SMS failed!");
       }
@@ -104,4 +106,6 @@ void sms_sendAccidentAlert(String mapsLink) {
     http.end();
     delay(1000);  // Wait between messages
   }
+  
+  return anySuccess;
 }
