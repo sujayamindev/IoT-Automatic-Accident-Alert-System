@@ -110,6 +110,65 @@ class FirebaseService:
             logger.error(f"Error unbinding device: {e}")
             return False
     
+    def store_telemetry_with_sticky_impact(self, user_id, mac_address, telemetry_data):
+        """
+        Store telemetry data with sticky impact flag logic.
+        Once hasHighImpact is set to true, it stays true for 60 seconds even if firmware sends impact=0.
+        This prevents the impact indicator from disappearing too quickly on the mobile app.
+        
+        Args:
+            user_id: Firebase user ID
+            mac_address: Device MAC address
+            telemetry_data: Dictionary with sensor data (includes 'impactDetected' from firmware)
+            
+        Returns:
+            bool: Success status
+        """
+        try:
+            timestamp = datetime.utcnow()
+            
+            # Get previous telemetry to check if impact flag should remain sticky
+            ref = self.db.reference(f'/users/{user_id}/devices/{mac_address}/telemetry/latest')
+            previous_data = ref.get()
+            
+            # Determine hasHighImpact with sticky logic
+            impact_detected = telemetry_data.get('impactDetected', False)
+            has_high_impact = impact_detected  # Start with current detection state
+            
+            # If not currently detecting impact, check if we should keep it sticky
+            if not impact_detected and previous_data:
+                # Check if previous telemetry had hasHighImpact=true
+                if previous_data.get('hasHighImpact', False):
+                    # Check how long ago the impact was detected (keep sticky for 60 seconds)
+                    impact_timestamp_str = previous_data.get('impactTimestamp')
+                    if impact_timestamp_str:
+                        try:
+                            impact_timestamp = datetime.fromisoformat(impact_timestamp_str)
+                            time_since_impact = (timestamp - impact_timestamp).total_seconds()
+                            if time_since_impact < 10:  # Keep sticky for 10 seconds
+                                has_high_impact = True
+                                logger.info(f"Impact flag still sticky ({time_since_impact:.1f}s since detection)")
+                        except Exception as e:
+                            logger.warning(f"Error parsing impact timestamp: {e}")
+            
+            # Set hasHighImpact in telemetry data
+            telemetry_data['hasHighImpact'] = has_high_impact
+            
+            # If impact is newly detected, record the timestamp
+            if impact_detected and (not previous_data or not previous_data.get('hasHighImpact', False)):
+                telemetry_data['impactTimestamp'] = timestamp.isoformat()
+                logger.info(f"New impact detected, setting timestamp")
+            elif has_high_impact and previous_data:
+                # Preserve the original impact timestamp while sticky
+                telemetry_data['impactTimestamp'] = previous_data.get('impactTimestamp', timestamp.isoformat())
+            
+            # Call the original store_telemetry method
+            return self.store_telemetry(user_id, mac_address, telemetry_data)
+            
+        except Exception as e:
+            logger.error(f"Error in store_telemetry_with_sticky_impact: {e}", exc_info=True)
+            return False
+    
     def store_telemetry(self, user_id, mac_address, telemetry_data):
         """
         Store telemetry data in Firebase RTDB (latest) and Firestore (history)

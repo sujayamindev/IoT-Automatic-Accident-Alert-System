@@ -22,6 +22,9 @@ class Telemetry {
   
   // GPS timestamp
   final String? gpsTimestamp;
+  
+  // Impact detection (sticky flag from backend)
+  final bool hasHighImpact;
 
   Telemetry({
     required this.latitude,
@@ -41,6 +44,7 @@ class Telemetry {
     this.humidity = 0.0,
     this.coLevel = 0,
     this.gpsTimestamp,
+    this.hasHighImpact = false,
   });
 
   factory Telemetry.fromJson(Map<String, dynamic> json) {
@@ -63,6 +67,7 @@ class Telemetry {
       humidity: json['humidity']?.toDouble() ?? 0.0,
       coLevel: json['coLevel'] ?? 0,
       gpsTimestamp: json['gpsTimestamp'],
+      hasHighImpact: json['hasHighImpact'] ?? false,
     );
   }
 
@@ -85,14 +90,7 @@ class Telemetry {
       'humidity': humidity,
       'coLevel': coLevel,
       'gpsTimestamp': gpsTimestamp,
+      'hasHighImpact': hasHighImpact,
     };
-  }
-  
-  // Helper to check if there's high impact
-  bool get hasHighImpact {
-    const impactThreshold = 25000;
-    return accelX.abs() > impactThreshold || 
-           accelY.abs() > impactThreshold || 
-           accelZ.abs() > impactThreshold;
   }
 }
