@@ -69,17 +69,25 @@ def require_user_auth(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        logger.info(f"Auth check for endpoint: {request.endpoint}")
+        
         auth_header = request.headers.get('Authorization')
+        logger.info(f"Authorization header present: {auth_header is not None}")
         
         if not auth_header or not auth_header.startswith('Bearer '):
+            logger.warning("Missing or invalid Authorization header")
             return jsonify({'error': 'Missing or invalid Authorization header'}), 401
         
         id_token = auth_header.split('Bearer ')[1]
+        logger.info(f"Token length: {len(id_token)}")
         
         # Verify Firebase ID token
         decoded_token = firebase_service.verify_firebase_token(id_token)
         if not decoded_token:
+            logger.error("Token verification failed")
             return jsonify({'error': 'Invalid or expired token'}), 401
+        
+        logger.info(f"Token verified for user: {decoded_token.get('uid')}")
         
         # Attach user_id to request
         request.user_id = decoded_token['uid']

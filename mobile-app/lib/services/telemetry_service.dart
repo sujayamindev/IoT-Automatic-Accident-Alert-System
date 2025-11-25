@@ -100,9 +100,12 @@ class TelemetryService {
   }
 
   // Bind device to user
-  Future<bool> bindDevice(String deviceId) async {
+  Future<bool> bindDevice(String macAddress, {String? deviceName}) async {
     try {
-      await _apiService.post('/bindDeviceToUser', {'deviceId': deviceId});
+      await _apiService.post('/api/app/bindDevice', {
+        'macAddress': macAddress,
+        'deviceName': deviceName ?? 'My Device',
+      });
       return true;
     } catch (e) {
       throw Exception('Failed to bind device: $e');

@@ -14,6 +14,7 @@ import 'screens/live_tracking.dart';
 import 'screens/history.dart';
 import 'screens/settings.dart';
 import 'screens/profile.dart';
+import 'screens/bind_device_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -86,6 +87,7 @@ class MyApp extends StatelessWidget {
               '/history': (context) => const HistoryScreen(),
               '/settings': (context) => const SettingsScreen(),
               '/profile': (context) => const ProfileScreen(),
+              '/bind-device': (context) => const BindDeviceScreen(),
             },
           );
         },

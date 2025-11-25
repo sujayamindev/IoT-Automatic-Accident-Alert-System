@@ -56,6 +56,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.of(context).pushNamed('/bind-device');
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Bind Device'),
+        backgroundColor: const Color(0xFF6366F1),
+        foregroundColor: Colors.white,
+      ),
       body: RefreshIndicator(
         onRefresh: _handleRefresh,
         child: telemetryProvider.isLoading && telemetry == null
