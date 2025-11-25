@@ -1,4 +1,5 @@
 #include "API.h"
+#include "SIM.h"
 #include "Config.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -60,11 +61,17 @@ bool api_sendTelemetry(
   float speed,
   bool fireDetected,
   bool smokeDetected,
-  bool vibrationDetected,
+  int16_t accel_x,
+  int16_t accel_y,
+  int16_t accel_z,
+  int16_t gyro_x,
+  int16_t gyro_y,
+  int16_t gyro_z,
   float temperature,
   float humidity,
   int coLevel,
-  int flameLevel
+  int flameLevel,
+  String gpsTimestamp
 ) {
   if (!api_isConnected()) {
     Serial.println("Error: Not connected to WiFi");
@@ -82,14 +89,21 @@ bool api_sendTelemetry(
   }
   
   // Create JSON payload
-  StaticJsonDocument<512> doc;
+  JsonDocument doc;
   doc["deviceId"] = deviceMacAddress;
   doc["lat"] = latitude;
   doc["lng"] = longitude;
   doc["spd"] = speed;
   doc["fire"] = fireDetected ? 1 : 0;
   doc["smoke"] = smokeDetected ? 1 : 0;
-  doc["vib"] = vibrationDetected ? 1 : 0;
+  
+  // MPU6050 data
+  doc["accel_x"] = accel_x;
+  doc["accel_y"] = accel_y;
+  doc["accel_z"] = accel_z;
+  doc["gyro_x"] = gyro_x;
+  doc["gyro_y"] = gyro_y;
+  doc["gyro_z"] = gyro_z;
   
   // Add extra sensor data (optional fields)
   doc["temp"] = temperature;
@@ -97,18 +111,16 @@ bool api_sendTelemetry(
   doc["coLevel"] = coLevel;
   doc["flameLevel"] = flameLevel;
   
+  // Add GPS timestamp if available
+  if (gpsTimestamp.length() > 0) {
+    doc["gpsTimestamp"] = gpsTimestamp;
+  }
+  
   // Optional: Add GSM signal level (0 for WiFi)
   doc["gsm"] = 0;
   
-  // Optional: Add battery percentage (not implemented yet)
-  // doc["bat"] = batteryPercentage;
-  
   String jsonPayload;
   serializeJson(doc, jsonPayload);
-  
-  Serial.println("\n--- Sending Telemetry ---");
-  Serial.println("URL: " + url);
-  Serial.println("Payload: " + jsonPayload);
   
   HTTPClient http;
   if (useHTTPS) {
@@ -122,19 +134,15 @@ bool api_sendTelemetry(
   
   int httpCode = http.POST(jsonPayload);
   
-  Serial.print("HTTP Response Code: ");
-  Serial.println(httpCode);
-  
   if (httpCode > 0) {
     String response = http.getString();
-    Serial.println("Response: " + response);
     
     if (httpCode == 200 || httpCode == 201) {
-      Serial.println("✓ Telemetry sent successfully!");
+      Serial.println("✓ Telemetry uploaded");
       http.end();
       return true;
     } else if (httpCode == 307 || httpCode == 308 || httpCode == 301 || httpCode == 302) {
-      Serial.println("⚠ Redirect detected - trying HTTPS directly...");
+      Serial.println("⚠ Redirect - retrying HTTPS...");
       http.end();
       
       // Retry with HTTPS directly
@@ -145,41 +153,90 @@ bool api_sendTelemetry(
       http.setTimeout(30000);
       
       int retryCode = http.POST(jsonPayload);
-      Serial.print("HTTPS Retry Response Code: ");
-      Serial.println(retryCode);
       
       if (retryCode == 200 || retryCode == 201) {
-        Serial.println("✓ Telemetry sent successfully via HTTPS!");
+        Serial.println("✓ Telemetry uploaded (HTTPS)");
         http.end();
         return true;
       } else if (retryCode == 403) {
-        Serial.println("✗ Device not bound to user! Bind device in mobile app first.");
-      } else {
-        response = http.getString();
-        Serial.println("Response: " + response);
+        Serial.println("✗ Device not bound");
       }
       http.end();
       return false;
     } else if (httpCode == 403) {
-      Serial.println("✗ Device not bound to user! Bind device in mobile app first.");
+      Serial.println("✗ Device not bound");
     } else if (httpCode == 400) {
-      Serial.println("✗ Invalid data format! Check payload structure.");
+      Serial.println("✗ Invalid data");
     } else {
-      Serial.println("✗ Server error");
+      Serial.print("✗ HTTP ");
+      Serial.println(httpCode);
     }
   } else {
-    Serial.print("✗ Connection failed: ");
+    Serial.print("✗ Failed: ");
     Serial.println(http.errorToString(httpCode));
-    
-    // Specific error handling
-    if (httpCode == -1) {
-      Serial.println("Hint: Backend may be sleeping (Render free tier takes 30s to wake up)");
-      Serial.println("Or check backend URL is correct and accessible");
-    } else if (httpCode == -11) {
-      Serial.println("Hint: Check WiFi connection and DNS resolution");
-    }
   }
   
   http.end();
   return false;
+}
+
+bool api_sendTelemetryViaGPRS(
+  double latitude,
+  double longitude,
+  float speed,
+  bool fireDetected,
+  bool smokeDetected,
+  int16_t accel_x,
+  int16_t accel_y,
+  int16_t accel_z,
+  int16_t gyro_x,
+  int16_t gyro_y,
+  int16_t gyro_z,
+  float temperature,
+  float humidity,
+  int coLevel,
+  int flameLevel,
+  String gpsTimestamp
+) {
+  Serial.println("Sending telemetry via GPRS...");
+  
+  // Build URL (use HTTP version for GPRS - SIM800L doesn't support HTTPS)
+  String url = String(BACKEND_API_URL_HTTP) + String(TELEMETRY_ENDPOINT);
+  
+  // Create JSON payload (same structure as WiFi)
+  JsonDocument doc;
+  doc["deviceId"] = deviceMacAddress;
+  doc["lat"] = latitude;
+  doc["lng"] = longitude;
+  doc["spd"] = speed;
+  doc["fire"] = fireDetected ? 1 : 0;
+  doc["smoke"] = smokeDetected ? 1 : 0;
+  
+  // MPU6050 data
+  doc["accel_x"] = accel_x;
+  doc["accel_y"] = accel_y;
+  doc["accel_z"] = accel_z;
+  doc["gyro_x"] = gyro_x;
+  doc["gyro_y"] = gyro_y;
+  doc["gyro_z"] = gyro_z;
+  
+  // Additional sensor data
+  doc["temp"] = temperature;
+  doc["humidity"] = humidity;
+  doc["coLevel"] = coLevel;
+  doc["flameLevel"] = flameLevel;
+  
+  // GPS timestamp
+  if (gpsTimestamp.length() > 0) {
+    doc["gpsTimestamp"] = gpsTimestamp;
+  }
+  
+  // GSM signal level (could read actual signal from SIM module)
+  doc["gsm"] = 1;  // Indicate GPRS mode
+  
+  String jsonPayload;
+  serializeJson(doc, jsonPayload);
+  
+  // Send via SIM module
+  return sim_sendHTTPPost(url, jsonPayload);
 }

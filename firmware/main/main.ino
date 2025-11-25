@@ -5,9 +5,6 @@
 #include "src/Config.h"
 #include "src/API.h"
 #include "src/Sensors.h"
-#include "BluetoothSerial.h"
-
-BluetoothSerial SerialBT;
 
 bool accidentDetected = false;
 bool simAvailable = false;
@@ -19,20 +16,13 @@ void setup() {
   Serial.println("Accident Alert System Starting...");
   Serial.println("=================================");
   
-  // Initialize Bluetooth Serial
-  SerialBT.begin(BLUETOOTH_DEVICE_NAME);
-  Serial.println("Bluetooth Serial initialized - Device Name: ESP32_Accident_Alert");
-  SerialBT.println("Accident Alert System - Bluetooth Connected");
-  
   // Initialize WiFi and API client (for telemetry)
   Serial.println("\n--- WiFi & API Initialization ---");
   if (api_init()) {
-    Serial.println("✓ API Client ready");
+    Serial.println("✅ API Client ready");
     Serial.println("Device MAC: " + api_getMacAddress());
-    SerialBT.println("WiFi Connected - Device MAC: " + api_getMacAddress());
   } else {
-    Serial.println("✗ API Client failed - will retry in loop");
-    SerialBT.println("WiFi Connection Failed - will retry");
+    Serial.println("❌ API Client failed - will retry in loop");
   }
   
   // Initialize core sensors
@@ -44,24 +34,34 @@ void setup() {
   Serial.println("\n--- Additional Sensors Initialization ---");
   sensors_init();
   
-  // Try to initialize GSM module (for SMS backup)
+  // Try to initialize GSM module (for SMS and GPRS data)
   Serial.println("\n--- GSM Module Initialization ---");
-  SerialBT.println("Initializing GSM module...");
   sim_init();
+  
+  // Check if SIM module is working and registered on network
+  simAvailable = sim_isModuleWorking();
+  if (simAvailable) {
+    Serial.println("✅ SIM800L module is working and registered");
+    
+    // Initialize GPRS connection early (keep alive for telemetry)
+    Serial.println("Initializing GPRS connection...");
+    if (sim_initGPRS()) {
+      Serial.println("✅ GPRS connection established and ready");
+    } else {
+      Serial.println("⚠ GPRS initialization failed - will retry on demand");
+    }
+  } else {
+    Serial.println("⚠ SIM800L module not available or not registered");
+  }
   
   // Initialize WiFi SMS Gateway as fallback
   Serial.println("\n--- SMS Gateway Initialization ---");
-  SerialBT.println("Initializing WiFi SMS Gateway...");
   sms_init();
-  
-  // Determine which module is available
-  simAvailable = true;  // Set based on actual SIM module check
   
   Serial.println("\n=================================");
   Serial.println("System Ready!");
   Serial.println("Telemetry upload every " + String(UPLOAD_INTERVAL_MS / 1000) + " seconds");
   Serial.println("=================================\n");
-  SerialBT.println("System Ready!");
 }
 
 void loop() {
@@ -74,7 +74,7 @@ void loop() {
   
   // Read additional sensors
   bool fireDetected = sensors_isFireDetected();
-  bool smokeDetected = sensors_isCODetected();
+  bool smokeDetected = sensors_isSmokeDetected();
   
   // If accident detected and not already processed
   if ((impact || tilt) && !accidentDetected) {
@@ -82,9 +82,6 @@ void loop() {
     Serial.println("\n---------------------------------");
     Serial.println("ACCIDENT DETECTED!");
     Serial.println("---------------------------------");
-    SerialBT.println("\n---------------------------------");
-    SerialBT.println("ACCIDENT DETECTED!");
-    SerialBT.println("---------------------------------");
     
     // Wait a moment for vehicle to come to a stop
     delay(100);
@@ -93,7 +90,6 @@ void loop() {
   // If accident was detected, check if vehicle has stopped
   if (accidentDetected && gps_isStopped()) {
     Serial.println("\n*** VEHICLE STOPPED - SENDING LOCATION ***");
-    SerialBT.println("\n*** VEHICLE STOPPED - SENDING LOCATION ***");
     
     // Get and print Google Maps link
     String mapsLink = gps_getGoogleMapsLink();
@@ -106,69 +102,88 @@ void loop() {
     Serial.print("Longitude: ");
     Serial.println(lng, 6);
     
-    SerialBT.println("Google Maps Link: " + mapsLink);
-    SerialBT.print("Latitude: ");
-    SerialBT.println(lat, 6);
-    SerialBT.print("Longitude: ");
-    SerialBT.println(lng, 6);
+    // Route SMS based on SIM module availability
+    bool smsSuccess = false;
     
-    // Try GSM first, fallback to WiFi only if GSM fails
-    Serial.println("Attempting to send via GSM...");
-    SerialBT.println("Attempting to send via GSM...");
-    bool gsmSuccess = sim_sendAccidentAlert(mapsLink);
-    
-    // Use WiFi SMS if GSM failed
-    if (!gsmSuccess) {
-      Serial.println("GSM failed, using WiFi SMS Gateway...");
-      SerialBT.println("GSM failed, using WiFi SMS Gateway...");
-      sms_sendAccidentAlert(mapsLink);
+    if (simAvailable) {
+      // SIM module is working - send via GSM network
+      Serial.println("Sending SMS via GSM network...");
+      smsSuccess = sim_sendAccidentAlert(mapsLink);
+      
+      if (smsSuccess) {
+        Serial.println("✓ SMS sent via GSM successfully!");
+      } else {
+        Serial.println("✗ GSM SMS failed, trying WiFi SMS Gateway...");
+      }
     } else {
-      Serial.println("SMS sent via GSM successfully!");
-      SerialBT.println("SMS sent via GSM successfully!");
+      Serial.println("SIM module not available, using WiFi SMS Gateway...");
     }
     
-    Serial.println("---------------------------------\n");
-    SerialBT.println("---------------------------------\n");
+    // Fallback to WiFi SMS Gateway if SIM not working or GSM SMS failed
+    if (!smsSuccess) {
+      smsSuccess = sms_sendAccidentAlert(mapsLink);
+      if (smsSuccess) {
+        Serial.println("✓ SMS sent via WiFi Gateway");
+      } else {
+        Serial.println("✗ All SMS methods failed!");
+      }
+    }
     
-    // Reset flag (or keep it true if you want to send only once)
+    // Reset accident flag after processing
     accidentDetected = false;
   }
   
-  // ===== TELEMETRY UPLOAD TO BACKEND (NEW) =====
+  // ===== TELEMETRY UPLOAD TO BACKEND =====
   unsigned long currentMillis = millis();
   if (currentMillis - lastTelemetryUpload >= UPLOAD_INTERVAL_MS) {
     lastTelemetryUpload = currentMillis;
     
-    // Reconnect WiFi if disconnected
+    // Gather all sensor data
+    double lat = gps_getLatitude();
+    double lng = gps_getLongitude();
+    float speed = gps_getSpeed();
+    
+    // Get MPU6050 raw data
+    int16_t ax, ay, az, gx, gy, gz;
+    mpu_getRawData(&ax, &ay, &az, &gx, &gy, &gz);
+    
+    float temperature = sensors_getTemperature();
+    float humidity = sensors_getHumidity();
+    int mq7Level = sensors_getMQ7Smooth();
+    int flameState = sensors_getFlameState();
+    String gpsTimestamp = gps_getTimestamp();
+    
+    bool telemetrySent = false;
+    
+    // Try WiFi first (current mode: WiFi primary)
     if (!api_isConnected()) {
       Serial.println("WiFi disconnected, reconnecting...");
       api_init();
     }
     
     if (api_isConnected()) {
-      // Gather all sensor data
-      double lat = gps_getLatitude();
-      double lng = gps_getLongitude();
-      float speed = gps_getSpeed();
-      bool vibration = impact || tilt;  // Any detected impact/tilt
-      float temperature = sensors_getTemperature();
-      float humidity = sensors_getHumidity();
-      int coLevel = sensors_getCOLevel();
-      int flameLevel = sensors_getFlameLevel();
-      
-      // Send telemetry to backend
-      bool success = api_sendTelemetry(
+      Serial.println("Attempting telemetry via WiFi...");
+      telemetrySent = api_sendTelemetry(
         lat, lng, speed,
-        fireDetected, smokeDetected, vibration,
-        temperature, humidity, coLevel, flameLevel
+        fireDetected, smokeDetected,
+        ax, ay, az, gx, gy, gz,
+        temperature, humidity, mq7Level, flameState, gpsTimestamp
       );
-      
-      if (success) {
-        SerialBT.println("✓ Telemetry uploaded");
-      } else {
-        Serial.println("✗ Telemetry upload failed");
-        SerialBT.println("✗ Telemetry upload failed");
-      }
+    }
+    
+    // Fallback to GPRS if WiFi failed
+    if (!telemetrySent && simAvailable) {
+      Serial.println("WiFi failed, attempting telemetry via GPRS...");
+      telemetrySent = api_sendTelemetryViaGPRS(
+        lat, lng, speed,
+        fireDetected, smokeDetected,
+        ax, ay, az, gx, gy, gz,
+        temperature, humidity, mq7Level, flameState, gpsTimestamp
+      );
+    }
+    
+    if (!telemetrySent) {
+      Serial.println("✗ Telemetry upload failed on all methods");
     }
   }
   

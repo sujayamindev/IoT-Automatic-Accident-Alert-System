@@ -8,9 +8,20 @@ constexpr const char* WIFI_SSID = "1234";
 constexpr const char* WIFI_PASSWORD = "mindev12394";
 
 // -------------------- BACKEND API CONFIGURATION --------------------
-constexpr const char* BACKEND_API_URL = "http://10.161.234.199:5000";
+// Production URLs for Render deployment
+constexpr const char* BACKEND_API_URL = "https://iot-automatic-accident-alert-system.onrender.com";
+constexpr const char* BACKEND_API_URL_HTTP = "http://iot-automatic-accident-alert-system.onrender.com";  // For GPRS (no HTTPS support)
 constexpr const char* TELEMETRY_ENDPOINT = "/api/device/uploadTelemetry";
-constexpr const int UPLOAD_INTERVAL_MS = 10000;  // 10 seconds (fixed interval)
+constexpr const int UPLOAD_INTERVAL_MS = 5000;  // 5 seconds (fixed interval)
+
+// Connection mode: false = WiFi first (GPRS fallback), true = GPRS first (WiFi fallback)
+constexpr const bool GPRS_PRIMARY_MODE = true;
+
+// -------------------- GPRS CONFIGURATION --------------------
+constexpr const char* GPRS_APN = "dialogbb";           // Dialog SIM APN
+constexpr const char* GPRS_USERNAME = "";              // Usually empty for Dialog
+constexpr const char* GPRS_PASSWORD = "";              // Usually empty for Dialog
+constexpr const int GPRS_TIMEOUT_MS = 30000;           // 30 second timeout for HTTP requests
 
 // -------------------- SENSOR PINS --------------------
 constexpr const int DHT11_PIN = 4;        // DHT11 temperature/humidity sensor
@@ -18,8 +29,8 @@ constexpr const int MQ7_PIN = 34;         // MQ-7 CO gas sensor (analog)
 constexpr const int FLAME_PIN = 35;       // Flame sensor (analog)
 
 // -------------------- SENSOR THRESHOLDS --------------------
-constexpr const int FLAME_THRESHOLD = 1000;  // Lower values indicate fire
-constexpr const int MQ7_THRESHOLD = 1500;    // Higher values indicate CO presence
+constexpr const int FLAME_THRESHOLD = 1000;     // Lower values indicate fire (analog mode)
+constexpr const int MQ7_SMOKE_THRESHOLD = 250;  // Smoothed MQ7 value indicating smoke
 
 // -------------------- SMS GATEWAY CONFIGURATION --------------------
 constexpr const char* SMS_GATEWAY_IP = "10.64.62.82";
