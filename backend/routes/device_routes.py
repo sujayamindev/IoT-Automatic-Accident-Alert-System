@@ -32,8 +32,13 @@ def upload_telemetry():
     - spd: Speed (km/h)
     - fire: Fire detected (0 or 1)
     - smoke: Smoke detected (0 or 1)
-    - vib: Vibration/impact detected (0 or 1)
-    - bat: Battery percentage (optional)
+    - accel_x, accel_y, accel_z: Accelerometer data (optional)
+    - gyro_x, gyro_y, gyro_z: Gyroscope data (optional)
+    - temp: Temperature (optional)
+    - humidity: Humidity (optional)
+    - coLevel: CO sensor level (optional)
+    - flameLevel: Flame sensor level (optional)
+    - gpsTimestamp: GPS timestamp in ISO 8601 format (optional)
     - gsm: GSM signal level (optional, 0-5)
     
     Returns:
@@ -85,12 +90,19 @@ def upload_telemetry():
             })
             alert_triggered = True
         
-        if cleaned_data['vibrationDetected']:
+        # Check for high impact based on MPU data
+        impact_threshold = 25000
+        if (abs(cleaned_data['accel_x']) > impact_threshold or 
+            abs(cleaned_data['accel_y']) > impact_threshold or 
+            abs(cleaned_data['accel_z']) > impact_threshold):
             firebase_service.store_alert(request.user_id, request.mac_address, {
-                'type': 'vibration',
+                'type': 'impact',
                 'latitude': cleaned_data['latitude'],
                 'longitude': cleaned_data['longitude'],
-                'description': 'High impact detected'
+                'description': 'High impact detected',
+                'accel_x': cleaned_data['accel_x'],
+                'accel_y': cleaned_data['accel_y'],
+                'accel_z': cleaned_data['accel_z']
             })
             alert_triggered = True
         

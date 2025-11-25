@@ -36,11 +36,23 @@ class FirebaseService:
             
         Returns:
             user_id or None
+        
+        Note: Searches through all users to find which user owns this device.
+        This is necessary since we removed the /devices path to eliminate duplication.
         """
         try:
-            ref = self.db.reference(f'/devices/{mac_address}/userId')
-            user_id = ref.get()
-            return user_id
+            # Query all users to find who owns this device
+            users_ref = self.db.reference('/users')
+            all_users = users_ref.get()
+            
+            if not all_users:
+                return None
+            
+            for user_id, user_data in all_users.items():
+                if 'devices' in user_data and mac_address in user_data['devices']:
+                    return user_id
+            
+            return None
         except Exception as e:
             logger.error(f"Error getting user ID for MAC {mac_address}: {e}")
             return None
@@ -56,18 +68,13 @@ class FirebaseService:
             
         Returns:
             bool: Success status
+        
+        Note: Only stores in /users path. The /devices path is redundant since we can 
+        always look up user->device mapping from /users/{userId}/devices/{macAddress}
         """
         try:
-            # Store in /devices/{macAddress}
-            device_ref = self.db.reference(f'/devices/{mac_address}')
-            device_ref.set({
-                'userId': user_id,
-                'deviceName': device_name,
-                'boundAt': datetime.utcnow().isoformat(),
-                'status': 'active'
-            })
-            
-            # Store in /users/{userId}/devices/{macAddress}
+            # Store ONLY in /users/{userId}/devices/{macAddress}
+            # This eliminates the /devices/{macAddress} duplication
             user_device_ref = self.db.reference(f'/users/{user_id}/devices/{mac_address}')
             user_device_ref.set({
                 'deviceName': device_name,
@@ -93,11 +100,7 @@ class FirebaseService:
             bool: Success status
         """
         try:
-            # Remove from /devices
-            device_ref = self.db.reference(f'/devices/{mac_address}')
-            device_ref.delete()
-            
-            # Remove from /users
+            # Remove only from /users (no more /devices path)
             user_device_ref = self.db.reference(f'/users/{user_id}/devices/{mac_address}')
             user_device_ref.delete()
             

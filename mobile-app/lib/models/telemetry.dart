@@ -4,10 +4,25 @@ class Telemetry {
   final double speed;
   final bool fireDetected;
   final bool smokeDetected;
-  final bool vibrationDetected;
-  final int batteryPercentage;
   final int gsmSignalLevel;
   final DateTime timestamp;
+  
+  // MPU6050 data
+  final int accelX;
+  final int accelY;
+  final int accelZ;
+  final int gyroX;
+  final int gyroY;
+  final int gyroZ;
+  
+  // Environmental sensors
+  final double temperature;
+  final double humidity;
+  final int coLevel;
+  final int flameLevel;
+  
+  // GPS timestamp
+  final String? gpsTimestamp;
 
   Telemetry({
     required this.latitude,
@@ -15,10 +30,19 @@ class Telemetry {
     required this.speed,
     required this.fireDetected,
     required this.smokeDetected,
-    required this.vibrationDetected,
-    required this.batteryPercentage,
     required this.gsmSignalLevel,
     required this.timestamp,
+    this.accelX = 0,
+    this.accelY = 0,
+    this.accelZ = 0,
+    this.gyroX = 0,
+    this.gyroY = 0,
+    this.gyroZ = 0,
+    this.temperature = 0.0,
+    this.humidity = 0.0,
+    this.coLevel = 0,
+    this.flameLevel = 0,
+    this.gpsTimestamp,
   });
 
   factory Telemetry.fromJson(Map<String, dynamic> json) {
@@ -28,10 +52,19 @@ class Telemetry {
       speed: json['speed']?.toDouble() ?? 0.0,
       fireDetected: json['fireDetected'] ?? false,
       smokeDetected: json['smokeDetected'] ?? false,
-      vibrationDetected: json['vibrationDetected'] ?? false,
-      batteryPercentage: json['batteryPercentage'] ?? 0,
       gsmSignalLevel: json['gsmSignalLevel'] ?? 0,
       timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
+      accelX: json['accel_x'] ?? 0,
+      accelY: json['accel_y'] ?? 0,
+      accelZ: json['accel_z'] ?? 0,
+      gyroX: json['gyro_x'] ?? 0,
+      gyroY: json['gyro_y'] ?? 0,
+      gyroZ: json['gyro_z'] ?? 0,
+      temperature: json['temperature']?.toDouble() ?? 0.0,
+      humidity: json['humidity']?.toDouble() ?? 0.0,
+      coLevel: json['coLevel'] ?? 0,
+      flameLevel: json['flameLevel'] ?? 0,
+      gpsTimestamp: json['gpsTimestamp'],
     );
   }
 
@@ -42,10 +75,27 @@ class Telemetry {
       'speed': speed,
       'fireDetected': fireDetected,
       'smokeDetected': smokeDetected,
-      'vibrationDetected': vibrationDetected,
-      'batteryPercentage': batteryPercentage,
       'gsmSignalLevel': gsmSignalLevel,
       'timestamp': timestamp.toIso8601String(),
+      'accel_x': accelX,
+      'accel_y': accelY,
+      'accel_z': accelZ,
+      'gyro_x': gyroX,
+      'gyro_y': gyroY,
+      'gyro_z': gyroZ,
+      'temperature': temperature,
+      'humidity': humidity,
+      'coLevel': coLevel,
+      'flameLevel': flameLevel,
+      'gpsTimestamp': gpsTimestamp,
     };
+  }
+  
+  // Helper to check if there's high impact
+  bool get hasHighImpact {
+    const impactThreshold = 25000;
+    return accelX.abs() > impactThreshold || 
+           accelY.abs() > impactThreshold || 
+           accelZ.abs() > impactThreshold;
   }
 }

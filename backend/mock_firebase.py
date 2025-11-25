@@ -71,8 +71,14 @@ class MockFirebaseService:
             'speed': 45.5,
             'fireDetected': False,
             'smokeDetected': False,
-            'vibrationDetected': False,
-            'batteryPercentage': 87,
+            'accel_x': 1000,
+            'accel_y': 500,
+            'accel_z': 16000,
+            'gyro_x': 0,
+            'gyro_y': 0,
+            'gyro_z': 0,
+            'temperature': 28.5,
+            'humidity': 65.0,
             'gsmSignalLevel': 4,
             'timestamp': datetime.utcnow().isoformat()
         }

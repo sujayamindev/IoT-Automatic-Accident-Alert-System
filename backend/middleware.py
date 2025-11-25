@@ -110,7 +110,7 @@ def validate_telemetry_data(data):
     """
     try:
         # Required fields
-        required_fields = ['lat', 'lng', 'spd', 'fire', 'smoke', 'vib']
+        required_fields = ['lat', 'lng', 'spd', 'fire', 'smoke']
         for field in required_fields:
             if field not in data:
                 return False, f"Missing required field: {field}", None
@@ -122,9 +122,20 @@ def validate_telemetry_data(data):
             'speed': float(data['spd']),
             'fireDetected': bool(int(data['fire'])),
             'smokeDetected': bool(int(data['smoke'])),
-            'vibrationDetected': bool(int(data['vib'])),
-            'batteryPercentage': int(data.get('bat', 0)),
-            'gsmSignalLevel': int(data.get('gsm', 0))
+            'gsmSignalLevel': int(data.get('gsm', 0)),
+            # MPU6050 data (optional but recommended)
+            'accel_x': int(data.get('accel_x', 0)),
+            'accel_y': int(data.get('accel_y', 0)),
+            'accel_z': int(data.get('accel_z', 0)),
+            'gyro_x': int(data.get('gyro_x', 0)),
+            'gyro_y': int(data.get('gyro_y', 0)),
+            'gyro_z': int(data.get('gyro_z', 0)),
+            # Additional sensor data
+            'temperature': float(data.get('temp', 0.0)),
+            'humidity': float(data.get('humidity', 0.0)),
+            'coLevel': int(data.get('coLevel', 0)),
+            'flameLevel': int(data.get('flameLevel', 0)),
+            'gpsTimestamp': data.get('gpsTimestamp', '')
         }
         
         # Validate ranges
@@ -134,8 +145,6 @@ def validate_telemetry_data(data):
             return False, "Invalid longitude", None
         if not (0 <= cleaned['speed'] <= 300):
             return False, "Invalid speed", None
-        if not (0 <= cleaned['batteryPercentage'] <= 100):
-            cleaned['batteryPercentage'] = max(0, min(100, cleaned['batteryPercentage']))
         if not (0 <= cleaned['gsmSignalLevel'] <= 5):
             cleaned['gsmSignalLevel'] = max(0, min(5, cleaned['gsmSignalLevel']))
         

@@ -25,3 +25,8 @@ class Config:
         
     # CORS
     CORS_ORIGINS = ['*']  # Update in production to specific domains
+    
+    # Protocol Support
+    # Backend supports both HTTP (for GPRS/SIM800L) and HTTPS (for WiFi)
+    # Render automatically handles HTTPS, but also allows HTTP for IoT devices
+    ALLOW_HTTP = True  # Allow HTTP requests from GPRS devices
