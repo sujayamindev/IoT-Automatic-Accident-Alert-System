@@ -4,9 +4,10 @@ import '../models/trip.dart';
 import '../models/alert.dart';
 import '../services/telemetry_service.dart';
 import '../services/mock_data_service.dart';
+import 'user_provider.dart';
 
 // Set to true to use mock data (no backend required)
-const bool useMockData = true;
+const bool useMockData = false;
 
 class TelemetryProvider with ChangeNotifier {
   final TelemetryService _telemetryService = TelemetryService();
@@ -24,7 +25,7 @@ class TelemetryProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   // Get live telemetry data
-  Future<void> fetchLiveData() async {
+  Future<void> fetchLiveData(UserProvider userProvider) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -35,7 +36,13 @@ class TelemetryProvider with ChangeNotifier {
         await Future.delayed(const Duration(milliseconds: 500));
         _currentTelemetry = MockDataService.getRandomTelemetry();
       } else {
-        _currentTelemetry = await _telemetryService.getLiveData();
+        final macAddress = userProvider.boundDeviceMac;
+        print('TelemetryProvider: Fetching live data with MAC: $macAddress');
+        if (macAddress == null) {
+          throw Exception('No device bound. Please bind a device first.');
+        }
+        _currentTelemetry = await _telemetryService.getLiveData(macAddress);
+        print('TelemetryProvider: Received telemetry data successfully');
       }
       _isLoading = false;
       notifyListeners();
@@ -47,7 +54,7 @@ class TelemetryProvider with ChangeNotifier {
   }
 
   // Get trip history
-  Future<void> fetchTripHistory({int page = 1, int limit = 20}) async {
+  Future<void> fetchTripHistory(UserProvider userProvider, {int page = 1, int limit = 20}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -63,7 +70,11 @@ class TelemetryProvider with ChangeNotifier {
           _trips.addAll(newTrips);
         }
       } else {
-        final newTrips = await _telemetryService.getTripHistory(page: page, limit: limit);
+        final macAddress = userProvider.boundDeviceMac;
+        if (macAddress == null) {
+          throw Exception('No device bound. Please bind a device first.');
+        }
+        final newTrips = await _telemetryService.getTripHistory(macAddress, page: page, limit: limit);
         if (page == 1) {
           _trips = newTrips;
         } else {
@@ -91,7 +102,7 @@ class TelemetryProvider with ChangeNotifier {
   }
 
   // Get alerts history
-  Future<void> fetchAlertsHistory({int page = 1, int limit = 20}) async {
+  Future<void> fetchAlertsHistory(UserProvider userProvider, {int page = 1, int limit = 20}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -107,7 +118,11 @@ class TelemetryProvider with ChangeNotifier {
           _alerts.addAll(newAlerts);
         }
       } else {
-        final newAlerts = await _telemetryService.getAlertsHistory(page: page, limit: limit);
+        final macAddress = userProvider.boundDeviceMac;
+        if (macAddress == null) {
+          throw Exception('No device bound. Please bind a device first.');
+        }
+        final newAlerts = await _telemetryService.getAlertsHistory(macAddress, page: page, limit: limit);
         if (page == 1) {
           _alerts = newAlerts;
         } else {
@@ -124,11 +139,11 @@ class TelemetryProvider with ChangeNotifier {
   }
 
   // Refresh all data
-  Future<void> refreshAll() async {
+  Future<void> refreshAll(UserProvider userProvider) async {
     await Future.wait([
-      fetchLiveData(),
-      fetchTripHistory(),
-      fetchAlertsHistory(),
+      fetchLiveData(userProvider),
+      fetchTripHistory(userProvider),
+      fetchAlertsHistory(userProvider),
     ]);
   }
 

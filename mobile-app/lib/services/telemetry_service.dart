@@ -8,19 +8,23 @@ class TelemetryService {
   final ApiService _apiService = ApiService();
 
   // Get live telemetry data
-  Future<Telemetry> getLiveData() async {
+  Future<Telemetry> getLiveData(String macAddress) async {
     try {
-      final response = await _apiService.get('/getLiveData');
-      return Telemetry.fromJson(response['data']);
+      print('TelemetryService: Calling API with MAC: $macAddress');
+      final response = await _apiService.get('/api/app/getLiveData?macAddress=$macAddress');
+      print('TelemetryService: API Response: $response');
+      // Backend returns telemetry data directly, not wrapped in 'data' field
+      return Telemetry.fromJson(response);
     } catch (e) {
+      print('TelemetryService: Error getting live data: $e');
       throw Exception('Failed to get live data: $e');
     }
   }
 
   // Get trip history
-  Future<List<Trip>> getTripHistory({int page = 1, int limit = 20}) async {
+  Future<List<Trip>> getTripHistory(String macAddress, {int page = 1, int limit = 20}) async {
     try {
-      final response = await _apiService.get('/getTripHistory?page=$page&limit=$limit');
+      final response = await _apiService.get('/api/app/getTripHistory?macAddress=$macAddress&page=$page&limit=$limit');
       final List<dynamic> trips = response['trips'] ?? [];
       return trips.map((trip) => Trip.fromJson(trip)).toList();
     } catch (e) {
@@ -39,9 +43,9 @@ class TelemetryService {
   }
 
   // Get alerts history
-  Future<List<Alert>> getAlertsHistory({int page = 1, int limit = 20}) async {
+  Future<List<Alert>> getAlertsHistory(String macAddress, {int page = 1, int limit = 20}) async {
     try {
-      final response = await _apiService.get('/getAlertsHistory?page=$page&limit=$limit');
+      final response = await _apiService.get('/api/app/getAlertsHistory?macAddress=$macAddress&page=$page&limit=$limit');
       final List<dynamic> alerts = response['alerts'] ?? [];
       return alerts.map((alert) => Alert.fromJson(alert)).toList();
     } catch (e) {
@@ -50,9 +54,9 @@ class TelemetryService {
   }
 
   // Get device settings
-  Future<DeviceSettings> getSettings() async {
+  Future<DeviceSettings> getSettings(String macAddress) async {
     try {
-      final response = await _apiService.get('/getSettings');
+      final response = await _apiService.get('/api/app/getSettings?macAddress=$macAddress');
       return DeviceSettings.fromJson(response['settings']);
     } catch (e) {
       throw Exception('Failed to get settings: $e');
@@ -62,7 +66,7 @@ class TelemetryService {
   // Update device settings
   Future<bool> updateSettings(DeviceSettings settings) async {
     try {
-      await _apiService.put('/updateSettings', settings.toJson());
+      await _apiService.put('/api/app/updateSettings', settings.toJson());
       return true;
     } catch (e) {
       throw Exception('Failed to update settings: $e');
@@ -72,7 +76,7 @@ class TelemetryService {
   // Add emergency contact
   Future<EmergencyContact> addContact(EmergencyContact contact) async {
     try {
-      final response = await _apiService.post('/addContact', contact.toJson());
+      final response = await _apiService.post('/api/app/addContact', contact.toJson());
       return EmergencyContact.fromJson(response['contact']);
     } catch (e) {
       throw Exception('Failed to add contact: $e');
@@ -82,7 +86,7 @@ class TelemetryService {
   // Update emergency contact
   Future<bool> updateContact(EmergencyContact contact) async {
     try {
-      await _apiService.put('/updateContact/${contact.id}', contact.toJson());
+      await _apiService.put('/api/app/updateContact/${contact.id}', contact.toJson());
       return true;
     } catch (e) {
       throw Exception('Failed to update contact: $e');
@@ -92,7 +96,7 @@ class TelemetryService {
   // Delete emergency contact
   Future<bool> deleteContact(String contactId) async {
     try {
-      await _apiService.delete('/deleteContact/$contactId');
+      await _apiService.delete('/api/app/deleteContact/$contactId');
       return true;
     } catch (e) {
       throw Exception('Failed to delete contact: $e');
@@ -115,7 +119,7 @@ class TelemetryService {
   // Unbind device from user
   Future<bool> unbindDevice() async {
     try {
-      await _apiService.post('/unbindDevice', {});
+      await _apiService.post('/api/app/unbindDevice', {});
       return true;
     } catch (e) {
       throw Exception('Failed to unbind device: $e');

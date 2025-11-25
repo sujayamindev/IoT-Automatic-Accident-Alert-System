@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/telemetry_provider.dart';
+import '../providers/user_provider.dart';
 import '../models/trip.dart';
 import '../models/alert.dart';
 
@@ -31,9 +32,10 @@ class _HistoryScreenState extends State<HistoryScreen>
 
   Future<void> _loadData() async {
     final telemetryProvider = Provider.of<TelemetryProvider>(context, listen: false);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
     await Future.wait([
-      telemetryProvider.fetchTripHistory(),
-      telemetryProvider.fetchAlertsHistory(),
+      telemetryProvider.fetchTripHistory(userProvider),
+      telemetryProvider.fetchAlertsHistory(userProvider),
     ]);
   }
 

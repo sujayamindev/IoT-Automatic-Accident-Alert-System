@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/user_provider.dart';
 import '../models/settings.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -19,7 +20,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
-    await settingsProvider.fetchSettings();
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final macAddress = userProvider.boundDeviceMac;
+    if (macAddress != null) {
+      await settingsProvider.fetchSettings(macAddress);
+    }
   }
 
   @override

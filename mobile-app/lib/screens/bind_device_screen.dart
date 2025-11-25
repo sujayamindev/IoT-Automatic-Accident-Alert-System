@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/telemetry_service.dart';
+import '../providers/user_provider.dart';
 
 class BindDeviceScreen extends StatefulWidget {
   const BindDeviceScreen({Key? key}) : super(key: key);
@@ -46,6 +48,10 @@ class _BindDeviceScreenState extends State<BindDeviceScreen> {
       print('Device bound successfully');
       
       if (mounted) {
+        // Store bound device in user provider
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        userProvider.setBoundDevice(macAddress, deviceName.isEmpty ? 'My Device' : deviceName);
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Device bound successfully!'),

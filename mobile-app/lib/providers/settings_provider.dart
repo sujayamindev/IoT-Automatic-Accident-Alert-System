@@ -18,7 +18,7 @@ class SettingsProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   // Fetch device settings
-  Future<void> fetchSettings() async {
+  Future<void> fetchSettings(String macAddress) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -29,7 +29,7 @@ class SettingsProvider with ChangeNotifier {
         await Future.delayed(const Duration(milliseconds: 500));
         _settings = MockDataService.getMockSettings();
       } else {
-        _settings = await _telemetryService.getSettings();
+        _settings = await _telemetryService.getSettings(macAddress);
       }
       _isLoading = false;
       notifyListeners();

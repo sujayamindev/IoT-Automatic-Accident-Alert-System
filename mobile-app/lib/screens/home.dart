@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
@@ -11,15 +12,28 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Timer? _autoRefreshTimer;
+
   @override
   void initState() {
     super.initState();
     _loadData();
+    // Auto-refresh every 5 seconds
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _loadData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
     final telemetryProvider = Provider.of<TelemetryProvider>(context, listen: false);
-    await telemetryProvider.fetchLiveData();
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    await telemetryProvider.fetchLiveData(userProvider);
   }
 
   Future<void> _handleRefresh() async {
@@ -180,8 +194,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: _buildAlertCard(
-                            'Vibration',
-                            telemetry?.vibrationDetected ?? false,
+                            'High Impact',
+                            telemetry?.hasHighImpact ?? false,
                             Icons.vibration,
                             Colors.purple,
                           ),

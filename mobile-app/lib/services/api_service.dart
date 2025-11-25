@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.161.234.199:5000';
+  static const String baseUrl = 'https://iot-automatic-accident-alert-system.onrender.com';
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Get fresh Firebase ID token

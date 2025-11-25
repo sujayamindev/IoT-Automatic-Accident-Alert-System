@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../providers/telemetry_provider.dart';
+import '../providers/user_provider.dart';
 
 class LiveTrackingScreen extends StatefulWidget {
   const LiveTrackingScreen({super.key});
@@ -13,16 +15,28 @@ class LiveTrackingScreen extends StatefulWidget {
 
 class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
   final MapController _mapController = MapController();
+  Timer? _autoRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    // Auto-refresh every 5 seconds
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _loadData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
     final telemetryProvider = Provider.of<TelemetryProvider>(context, listen: false);
-    await telemetryProvider.fetchLiveData();
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    await telemetryProvider.fetchLiveData(userProvider);
   }
 
   @override
@@ -129,8 +143,8 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> {
                                     Colors.orange,
                                   ),
                                   _buildAlertIndicator(
-                                    'Vibration',
-                                    telemetry.vibrationDetected,
+                                    'High Impact',
+                                    telemetry.hasHighImpact,
                                     Icons.vibration,
                                     Colors.purple,
                                   ),

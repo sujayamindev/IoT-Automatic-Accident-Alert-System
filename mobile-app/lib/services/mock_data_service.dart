@@ -12,8 +12,6 @@ class MockDataService {
       speed: 45.5,
       fireDetected: false,
       smokeDetected: false,
-      vibrationDetected: false,
-      batteryPercentage: 85,
       gsmSignalLevel: 4,
       timestamp: DateTime.now(),
     );
@@ -178,10 +176,9 @@ class MockDataService {
       speed: 30.0 + (random % 40).toDouble(),
       fireDetected: random % 20 == 0,
       smokeDetected: random % 15 == 0,
-      vibrationDetected: random % 10 == 0,
-      batteryPercentage: 70 + (random % 30),
       gsmSignalLevel: 3 + (random % 2),
       timestamp: DateTime.now(),
+      accelX: random % 10 == 0 ? 30000 : 1000, // Occasionally trigger high impact
     );
   }
 }
