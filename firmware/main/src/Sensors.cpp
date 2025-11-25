@@ -9,6 +9,7 @@ void sensors_init() {
   Serial.println("Initializing additional sensors...");
   
   // Initialize DHT11
+  pinMode(DHT11_PIN, INPUT_PULLUP);
   dht.begin();
   Serial.println("- DHT11 initialized on pin " + String(DHT11_PIN));
   
@@ -25,7 +26,7 @@ void sensors_init() {
 float sensors_getTemperature() {
   float temp = dht.readTemperature();
   if (isnan(temp)) {
-    Serial.println("Warning: Failed to read temperature from DHT11");
+    // Silent fail - DHT11 sensor may not be connected
     return 0.0;
   }
   return temp;
@@ -34,26 +35,33 @@ float sensors_getTemperature() {
 float sensors_getHumidity() {
   float humidity = dht.readHumidity();
   if (isnan(humidity)) {
-    Serial.println("Warning: Failed to read humidity from DHT11");
+    // Silent fail - DHT11 sensor may not be connected
     return 0.0;
   }
   return humidity;
 }
 
-int sensors_getCOLevel() {
-  return analogRead(MQ7_PIN);
+// Smooth MQ7 analog value by averaging 30 readings
+int sensors_getMQ7Smooth() {
+  long sum = 0;
+  for (int i = 0; i < 30; i++) {
+    sum += analogRead(MQ7_PIN);
+    delay(2);
+  }
+  return sum / 30;
 }
 
-bool sensors_isCODetected() {
-  int coLevel = sensors_getCOLevel();
-  return coLevel > MQ7_THRESHOLD;
+bool sensors_isSmokeDetected() {
+  int mq7Value = sensors_getMQ7Smooth();
+  return mq7Value > MQ7_SMOKE_THRESHOLD;
 }
 
-int sensors_getFlameLevel() {
-  return analogRead(FLAME_PIN);
+// Read flame sensor digital state
+int sensors_getFlameState() {
+  return digitalRead(FLAME_PIN);
 }
 
 bool sensors_isFireDetected() {
-  int flameLevel = sensors_getFlameLevel();
-  return flameLevel < FLAME_THRESHOLD;  // Lower values indicate fire
+  int flameState = sensors_getFlameState();
+  return flameState == LOW;  // LOW indicates fire detected
 }

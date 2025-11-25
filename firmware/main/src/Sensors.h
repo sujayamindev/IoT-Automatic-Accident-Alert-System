@@ -10,12 +10,12 @@ void sensors_init();
 float sensors_getTemperature();
 float sensors_getHumidity();
 
-// Read MQ-7 CO sensor
-int sensors_getCOLevel();
-bool sensors_isCODetected();
+// Read MQ-7 CO sensor with smoothing
+int sensors_getMQ7Smooth();
+bool sensors_isSmokeDetected();
 
 // Read Flame sensor
-int sensors_getFlameLevel();
+int sensors_getFlameState();
 bool sensors_isFireDetected();
 
 #endif
