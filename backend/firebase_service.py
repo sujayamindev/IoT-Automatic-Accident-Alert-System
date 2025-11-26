@@ -76,9 +76,11 @@ class FirebaseService:
             # Store ONLY in /users/{userId}/devices/{macAddress}
             # This eliminates the /devices/{macAddress} duplication
             user_device_ref = self.db.reference(f'/users/{user_id}/devices/{mac_address}')
+            # Convert to Sri Lankan time (UTC+5:30)
+            bound_time = datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)
             user_device_ref.set({
                 'deviceName': device_name,
-                'boundAt': datetime.now(timezone.utc).isoformat(),
+                'boundAt': bound_time.isoformat(),
                 'lastSeen': None
             })
             
@@ -125,7 +127,9 @@ class FirebaseService:
             bool: Success status
         """
         try:
-            timestamp = datetime.now(timezone.utc)
+            # Convert to Sri Lankan time (UTC+5:30)
+            timestamp_utc = datetime.now(timezone.utc)
+            timestamp = timestamp_utc + timedelta(hours=5, minutes=30)
             
             # Get previous telemetry to check if impact flag should remain sticky
             ref = self.db.reference(f'/users/{user_id}/devices/{mac_address}/telemetry/latest')
@@ -182,8 +186,10 @@ class FirebaseService:
             bool: Success status
         """
         try:
-            timestamp = datetime.now(timezone.utc)
-            timestamp_iso = timestamp.isoformat()
+            # Convert to Sri Lankan time (UTC+5:30)
+            timestamp_utc = datetime.now(timezone.utc)
+            timestamp_lk = timestamp_utc + timedelta(hours=5, minutes=30)
+            timestamp_iso = timestamp_lk.isoformat()
             telemetry_data['timestamp'] = timestamp_iso
             telemetry_data['deviceId'] = mac_address
             
@@ -209,7 +215,7 @@ class FirebaseService:
             
             logger.info(f"✓ Firestore document created: {doc_ref.id} at {update_time}")
             
-            # Update last seen
+            # Update last seen with Sri Lankan time
             device_ref = self.db.reference(f'/users/{user_id}/devices/{mac_address}')
             device_ref.update({'lastSeen': timestamp_iso})
             
@@ -461,7 +467,10 @@ class FirebaseService:
             bool: Success status
         """
         try:
-            timestamp = datetime.now(timezone.utc).isoformat()
+            # Convert to Sri Lankan time (UTC+5:30)
+            timestamp_utc = datetime.now(timezone.utc)
+            timestamp_lk = timestamp_utc + timedelta(hours=5, minutes=30)
+            timestamp = timestamp_lk.isoformat()
             alert_data['timestamp'] = timestamp
             alert_data['deviceId'] = mac_address
             alert_data['acknowledged'] = False

@@ -26,10 +26,13 @@ class MockFirebaseService:
     
     def bind_device_to_user(self, user_id, mac_address, device_name="My Device"):
         """Bind device to user"""
+        from datetime import timedelta
+        # Convert to Sri Lankan time (UTC+5:30)
+        lk_time = (datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)).isoformat()
         self.mock_data['devices'][mac_address] = {
             'userId': user_id,
             'deviceName': device_name,
-            'boundAt': datetime.now(timezone.utc).isoformat(),
+            'boundAt': lk_time,
             'status': 'active'
         }
         
@@ -38,7 +41,7 @@ class MockFirebaseService:
         
         self.mock_data['users'][user_id]['devices'][mac_address] = {
             'deviceName': device_name,
-            'boundAt': datetime.now(timezone.utc).isoformat(),
+            'boundAt': lk_time,
             'lastSeen': None
         }
         
@@ -80,7 +83,7 @@ class MockFirebaseService:
             'temperature': 28.5,
             'humidity': 65.0,
             'gsmSignalLevel': 4,
-            'timestamp': datetime.now(timezone.utc).isoformat()
+            'timestamp': (datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)).isoformat()
         }
     
     def get_device_config(self, mac_address):
