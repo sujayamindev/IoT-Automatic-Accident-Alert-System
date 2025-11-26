@@ -3,7 +3,7 @@ Firebase Service for database operations
 """
 import firebase_admin
 from firebase_admin import credentials, db, firestore, auth
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from config import Config
 import logging
 
@@ -78,7 +78,7 @@ class FirebaseService:
             user_device_ref = self.db.reference(f'/users/{user_id}/devices/{mac_address}')
             user_device_ref.set({
                 'deviceName': device_name,
-                'boundAt': datetime.utcnow().isoformat(),
+                'boundAt': datetime.now(timezone.utc).isoformat(),
                 'lastSeen': None
             })
             
@@ -125,7 +125,7 @@ class FirebaseService:
             bool: Success status
         """
         try:
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now(timezone.utc)
             
             # Get previous telemetry to check if impact flag should remain sticky
             ref = self.db.reference(f'/users/{user_id}/devices/{mac_address}/telemetry/latest')
@@ -182,7 +182,7 @@ class FirebaseService:
             bool: Success status
         """
         try:
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now(timezone.utc)
             timestamp_iso = timestamp.isoformat()
             telemetry_data['timestamp'] = timestamp_iso
             telemetry_data['deviceId'] = mac_address
@@ -197,7 +197,7 @@ class FirebaseService:
             # Store historical telemetry directly in Firestore
             firestore_data = {
                 **telemetry_data,
-                'createdAt': timestamp,
+                'createdAt': timestamp_iso,
                 'userId': user_id,
                 'macAddress': mac_address
             }
@@ -363,9 +363,7 @@ class FirebaseService:
             for doc in docs:
                 data = doc.to_dict()
                 data['id'] = doc.id
-                # Convert timestamp to ISO string if it's a datetime
-                if 'createdAt' in data and hasattr(data['createdAt'], 'isoformat'):
-                    data['createdAt'] = data['createdAt'].isoformat()
+                # createdAt is already stored as ISO string
                 telemetry_list.append(data)
             
             return telemetry_list
@@ -463,7 +461,7 @@ class FirebaseService:
             bool: Success status
         """
         try:
-            timestamp = datetime.utcnow().isoformat()
+            timestamp = datetime.now(timezone.utc).isoformat()
             alert_data['timestamp'] = timestamp
             alert_data['deviceId'] = mac_address
             alert_data['acknowledged'] = False

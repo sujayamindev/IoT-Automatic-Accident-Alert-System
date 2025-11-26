@@ -92,7 +92,7 @@ void loop() {
     Serial.println("FIRE DETECTED! Sending SMS...");
     Serial.println("---------------------------------");
     
-    String mapsLink = gps_getGoogleMapsLink();
+    String mapsLink = gps_getGoogleMapsLinkWithFallback();
     String message = "ALERT: Fire detected! Location: " + mapsLink;
     
     bool smsSuccess = false;
@@ -117,7 +117,7 @@ void loop() {
     Serial.println("SMOKE DETECTED! Sending SMS...");
     Serial.println("---------------------------------");
     
-    String mapsLink = gps_getGoogleMapsLink();
+    String mapsLink = gps_getGoogleMapsLinkWithFallback();
     String message = "ALERT: Smoke detected! Location: " + mapsLink;
     
     bool smsSuccess = false;
@@ -144,7 +144,7 @@ void loop() {
     Serial.println("°C! Sending SMS...");
     Serial.println("---------------------------------");
     
-    String mapsLink = gps_getGoogleMapsLink();
+    String mapsLink = gps_getGoogleMapsLinkWithFallback();
     String message = "ALERT: Extreme temperature (" + String(temperature, 1) + "C) detected! Location: " + mapsLink;
     
     bool smsSuccess = false;
@@ -217,20 +217,30 @@ void loop() {
     delay(100);
   }
   
-  // If accident was detected, check if vehicle has stopped
-  if (accidentDetected && gps_isStopped()) {
-    Serial.println("\n*** VEHICLE STOPPED - SENDING LOCATION ***");
+  // If accident was detected, check if vehicle has stopped OR if GPS is unavailable
+  if (accidentDetected && (gps_isStopped() || !gps_isLocationValid())) {
+    if (!gps_isLocationValid()) {
+      Serial.println("\n*** GPS UNAVAILABLE - SENDING ALERT WITH LAST KNOWN LOCATION ***");
+    } else {
+      Serial.println("\n*** VEHICLE STOPPED - SENDING LOCATION ***");
+    }
     
-    // Get and print Google Maps link
-    String mapsLink = gps_getGoogleMapsLink();
+    // Get and print Google Maps link with fallback
+    String mapsLink = gps_getGoogleMapsLinkWithFallback();
     double lat = gps_getLatitude();
     double lng = gps_getLongitude();
     
-    Serial.println("Google Maps Link: " + mapsLink);
-    Serial.print("Latitude: ");
-    Serial.println(lat, 6);
-    Serial.print("Longitude: ");
-    Serial.println(lng, 6);
+    Serial.println("Location Info: " + mapsLink);
+    if (gps_isLocationValid()) {
+      Serial.print("Current Latitude: ");
+      Serial.println(lat, 6);
+      Serial.print("Current Longitude: ");
+      Serial.println(lng, 6);
+    } else if (gps_hasLastValidLocation()) {
+      Serial.println("Using last valid GPS location");
+    } else {
+      Serial.println("No GPS data available");
+    }
     
     // Route SMS based on SIM module availability
     bool smsSuccess = false;

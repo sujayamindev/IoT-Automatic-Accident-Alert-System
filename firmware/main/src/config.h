@@ -40,9 +40,6 @@ constexpr const char* SMS_GATEWAY_TOKEN = "dc916541-d7ec-484e-a405-be9daadb9f71"
 
 // -------------------- PHONE NUMBERS --------------------
 // Phone numbers for both WiFi SMS Gateway and GSM Module
-inline const char* const PHONE_NUMBERS[] = {"+94717016900"};
-
-// -------------------- BLUETOOTH CONFIGURATION --------------------
-constexpr const char* BLUETOOTH_DEVICE_NAME = "ESP32_Accident_Alert";
+inline const char* const PHONE_NUMBERS[] = {"+94717016900", "+94769696558", "+94704018546"};
 
 #endif

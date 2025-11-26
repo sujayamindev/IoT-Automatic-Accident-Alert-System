@@ -3,6 +3,12 @@
 TinyGPSPlus gps;
 HardwareSerial gpsSerial(1);  // Use UART1
 
+// Cache for last valid GPS location
+static double lastValidLat = 0.0;
+static double lastValidLng = 0.0;
+static String lastValidTimestamp = "";
+static bool hasValidLocationCache = false;
+
 void gps_init() {
   gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_RX, GPS_TX);
   Serial.println("GPS UART1 initialized");
@@ -12,6 +18,14 @@ void gps_update() {
   // Continuously read available GPS data
   while (gpsSerial.available() > 0) {
     gps.encode(gpsSerial.read());
+  }
+  
+  // Cache location if valid
+  if (gps.location.isValid()) {
+    lastValidLat = gps.location.lat();
+    lastValidLng = gps.location.lng();
+    lastValidTimestamp = gps_getFormattedTimestamp();
+    hasValidLocationCache = true;
   }
 }
 
@@ -59,6 +73,21 @@ String gps_getGoogleMapsLink() {
   String mapsLink = "https://www.google.com/maps?q=" + String(lat, 6) + "," + String(lng, 6);
   
   return mapsLink;
+}
+
+String gps_getGoogleMapsLinkWithFallback() {
+  if (gps.location.isValid()) {
+    // Current GPS is valid
+    double lat = gps.location.lat();
+    double lng = gps.location.lng();
+    return "https://www.google.com/maps?q=" + String(lat, 6) + "," + String(lng, 6);
+  } else if (hasValidLocationCache) {
+    // Use cached last valid location
+    String mapsLink = "https://www.google.com/maps?q=" + String(lastValidLat, 6) + "," + String(lastValidLng, 6);
+    return "GPS unavailable. Last location (" + lastValidTimestamp + "): " + mapsLink;
+  } else {
+    return "GPS unavailable. No location data recorded.";
+  }
 }
 
 float gps_getLatitude() {
@@ -148,4 +177,15 @@ String gps_getFormattedTimestamp() {
   sprintf(timestamp, "%04d-%02d-%02d %02d:%02d:%02d IST", 
           year, month, day, hour, minute, second);
   return String(timestamp);
+}
+
+bool gps_hasLastValidLocation() {
+  return hasValidLocationCache;
+}
+
+String gps_getLastValidTimestamp() {
+  if (hasValidLocationCache) {
+    return lastValidTimestamp;
+  }
+  return "Unknown";
 }

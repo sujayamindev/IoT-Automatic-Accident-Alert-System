@@ -3,7 +3,7 @@ Mock Firebase Service for Testing
 Use this when you don't have firebase-service-account.json yet
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class MockFirebaseService:
         self.mock_data['devices'][mac_address] = {
             'userId': user_id,
             'deviceName': device_name,
-            'boundAt': datetime.utcnow().isoformat(),
+            'boundAt': datetime.now(timezone.utc).isoformat(),
             'status': 'active'
         }
         
@@ -38,7 +38,7 @@ class MockFirebaseService:
         
         self.mock_data['users'][user_id]['devices'][mac_address] = {
             'deviceName': device_name,
-            'boundAt': datetime.utcnow().isoformat(),
+            'boundAt': datetime.now(timezone.utc).isoformat(),
             'lastSeen': None
         }
         
@@ -80,7 +80,7 @@ class MockFirebaseService:
             'temperature': 28.5,
             'humidity': 65.0,
             'gsmSignalLevel': 4,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
     
     def get_device_config(self, mac_address):
