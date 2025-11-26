@@ -142,6 +142,7 @@ def get_live_data():
         if not telemetry:
             return jsonify({'error': 'No telemetry data found'}), 404
         
+        logger.info(f"getLiveData returning hasHighImpact={telemetry.get('hasHighImpact', 'NOT_FOUND')} for {mac_address}")
         return jsonify(telemetry), 200
         
     except Exception as e:

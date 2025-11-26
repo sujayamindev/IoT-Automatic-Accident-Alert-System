@@ -157,6 +157,7 @@ class FirebaseService:
             
             # Set hasHighImpact in telemetry data
             telemetry_data['hasHighImpact'] = has_high_impact
+            logger.info(f"Setting hasHighImpact={has_high_impact} for device {mac_address} (impactDetected={impact_detected})")
             
             # If impact is newly detected, record the timestamp
             if impact_detected and (not previous_data or not previous_data.get('hasHighImpact', False)):
