@@ -1,0 +1,19 @@
+# Firmware - Arduino/ESP32
+
+# Configuration files with sensitive credentials
+src/config.h
+
+# Build outputs
+*.bin
+*.hex
+*.elf
+*.map
+
+# IDE files
+.vscode/
+.pio/
+.platformio/
+
+# OS files
+.DS_Store
+Thumbs.db

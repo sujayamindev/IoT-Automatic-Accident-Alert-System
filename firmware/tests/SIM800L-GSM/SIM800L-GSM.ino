@@ -5,7 +5,7 @@
 
 HardwareSerial sim800l(2);
 
-String phoneNumber = "+94717016900";
+String phoneNumber = "+94771234567";  // Replace with your phone number
 String staticMessage = "Vehicle status: STOPPED.\nLocation: TBD";
 
 // Send AT command and return response

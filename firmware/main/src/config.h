@@ -4,13 +4,13 @@
 #include <Arduino.h>
 
 // -------------------- WIFI CONFIGURATION --------------------
-constexpr const char* WIFI_SSID = "1234";
-constexpr const char* WIFI_PASSWORD = "mindev12394";
+constexpr const char* WIFI_SSID = "YOUR_WIFI_SSID";
+constexpr const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 
 // -------------------- BACKEND API CONFIGURATION --------------------
 // Production URLs for Render deployment
-constexpr const char* BACKEND_API_URL = "https://iot-automatic-accident-alert-system.onrender.com";
-constexpr const char* BACKEND_API_URL_HTTP = "http://iot-automatic-accident-alert-system.onrender.com";  // For GPRS (no HTTPS support)
+constexpr const char* BACKEND_API_URL = "https://your-backend-url.onrender.com";
+constexpr const char* BACKEND_API_URL_HTTP = "http://your-backend-url.onrender.com";  // For GPRS (no HTTPS support)
 constexpr const char* TELEMETRY_ENDPOINT = "/api/device/uploadTelemetry";
 constexpr const int UPLOAD_INTERVAL_MS = 1000;  // 1 second (fixed interval)
 
@@ -18,9 +18,9 @@ constexpr const int UPLOAD_INTERVAL_MS = 1000;  // 1 second (fixed interval)
 constexpr const bool GPRS_PRIMARY_MODE = false;
 
 // -------------------- GPRS CONFIGURATION --------------------
-constexpr const char* GPRS_APN = "dialogbb";           // Dialog SIM APN
-constexpr const char* GPRS_USERNAME = "";              // Usually empty for Dialog
-constexpr const char* GPRS_PASSWORD = "";              // Usually empty for Dialog
+constexpr const char* GPRS_APN = "your-mobile-apn";           // Your mobile carrier APN (e.g., "dialogbb" for Dialog)
+constexpr const char* GPRS_USERNAME = "";              // Usually empty for most carriers
+constexpr const char* GPRS_PASSWORD = "";              // Usually empty for most carriers
 constexpr const int GPRS_TIMEOUT_MS = 30000;           // 30 second timeout for HTTP requests
 
 // -------------------- SENSOR PINS --------------------
@@ -34,12 +34,14 @@ constexpr const int MQ7_SMOKE_THRESHOLD = 250;  // Smoothed MQ7 value indicating
 constexpr const float EXTREME_TEMP_THRESHOLD = 50.0;  // Temperature in Celsius indicating extreme heat
 
 // -------------------- SMS GATEWAY CONFIGURATION --------------------
-constexpr const char* SMS_GATEWAY_IP = "10.161.234.8";
+// Note: If using WiFi SMS gateway, configure your local SMS gateway server
+constexpr const char* SMS_GATEWAY_IP = "192.168.1.100";  // Your SMS gateway server IP
 constexpr const int SMS_GATEWAY_PORT = 8082;
-constexpr const char* SMS_GATEWAY_TOKEN = "dc916541-d7ec-484e-a405-be9daadb9f71";
+constexpr const char* SMS_GATEWAY_TOKEN = "your-sms-gateway-token";
 
 // -------------------- PHONE NUMBERS --------------------
 // Phone numbers for both WiFi SMS Gateway and GSM Module
-inline const char* const PHONE_NUMBERS[] = {"+94717016900", "+94769696558", "+94704018546"};
+// Format: International format with country code (e.g., "+94771234567" for Sri Lanka)
+inline const char* const PHONE_NUMBERS[] = {"+94771234567", "+94779876543", "+94112345678"};
 
 #endif

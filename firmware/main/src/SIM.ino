@@ -5,7 +5,8 @@
 
 HardwareSerial sim800l(2);
 
-String phoneNumbers[] = {"+94717016900"};
+// Emergency contact phone numbers (configure these in config.h)
+String phoneNumbers[] = {"+94771234567"};
 int numPhones = 1;
 
 void sendCommand(String cmd, int wait = 2000) {

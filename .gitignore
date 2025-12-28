@@ -1,0 +1,50 @@
+# -------------------- CREDENTIALS & SENSITIVE FILES --------------------
+# Never commit these files - they contain sensitive credentials
+firebase\main\src\config.h
+backend\firebase-service-account.json
+backend\.env
+mobile-app\android\app\google-services.json
+mobile-app\ios\Runner\GoogleService-Info.plist
+mobile-app\lib\firebase_options.dart
+
+# -------------------- BUILD ARTIFACTS --------------------
+# Backend Python
+backend\__pycache__\
+backend\*.py[cod]
+backend\*$py.class
+backend\*.so
+backend\.Python
+backend\env\
+backend\venv\
+backend\ENV\
+backend\build\
+backend\dist\
+backend\*.egg-info\
+backend\*.log
+
+# Firmware
+firmware\**\*.bin
+firmware\**\*.hex
+firmware\**\*.elf
+
+# Mobile App
+mobile-app\build\
+mobile-app\.dart_tool\
+mobile-app\.flutter-plugins
+mobile-app\.flutter-plugins-dependencies
+mobile-app\.packages
+mobile-app\pubspec.lock
+
+# -------------------- IDE & OS FILES --------------------
+.vscode\
+.idea\
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# -------------------- LOGS --------------------
+*.log
+logs\

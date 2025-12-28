@@ -15,7 +15,8 @@ int gatewayPort = 8082;              // Default Traccar gateway port
 String gatewayToken = "dc916541-d7ec-484e-a405-be9daadb9f71";  // If token-based auth is enabled
 
 // Phone numbers to send SMS
-String phoneNumbers[] = {"+94717016900", "+94769696558", "+94722115153"};
+// Emergency contact phone numbers (configure these in config.h)
+String phoneNumbers[] = {"+94771234567", "+94779876543", "+94112345678"};
 int numPhones = 3;
 
 void setup() {
